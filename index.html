@@ -1387,6 +1387,44 @@ function OverviewTab({
     }
     return bins;
   }, [students]);
+  var boxPlotData = useMemo(function () {
+    if (avgs.length < 3) return null;
+    var sorted = avgs.slice().sort(function (a, b) {
+      return a - b;
+    });
+    var n = sorted.length;
+    var q1Idx = Math.floor(n * 0.25);
+    var q3Idx = Math.floor(n * 0.75);
+    var min = sorted[0],
+      max = sorted[n - 1];
+    var q1 = sorted[q1Idx],
+      q3 = sorted[q3Idx];
+    var med = n % 2 === 0 ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2 : sorted[Math.floor(n / 2)];
+    var iqr = q3 - q1;
+    var whiskerLo = Math.max(min, q1 - 1.5 * iqr);
+    var whiskerHi = Math.min(max, q3 + 1.5 * iqr);
+    // Find actual whisker endpoints (nearest data points within range)
+    var wLo = sorted.find(function (v) {
+      return v >= whiskerLo;
+    }) || min;
+    var wHi = sorted.slice().reverse().find(function (v) {
+      return v <= whiskerHi;
+    }) || max;
+    var outliers = sorted.filter(function (v) {
+      return v < wLo || v > wHi;
+    });
+    return {
+      min: min,
+      max: max,
+      q1: Math.round(q1 * 10) / 10,
+      q3: Math.round(q3 * 10) / 10,
+      median: Math.round(med * 10) / 10,
+      whiskerLo: Math.round(wLo * 10) / 10,
+      whiskerHi: Math.round(wHi * 10) / 10,
+      outliers: outliers,
+      n: n
+    };
+  }, [avgs]);
   var missingStats = useMemo(function () {
     var perStudent = students.map(function (s) {
       var missing = assignments.filter(function (a) {
@@ -2166,7 +2204,166 @@ function OverviewTab({
     fill: cl.accent,
     radius: [4, 4, 0, 0],
     name: "Students"
-  }))))))), /*#__PURE__*/React.createElement(Section, {
+  }))))), boxPlotData ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: cl.bg,
+      border: "1px solid " + cl.bdr,
+      borderRadius: 10,
+      padding: 18
+    }
+  }, /*#__PURE__*/React.createElement("h3", {
+    style: {
+      fontSize: 14,
+      marginBottom: 14,
+      color: cl.accent,
+      fontWeight: 700
+    }
+  }, "Grade Distribution \u2014 Box & Whisker"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "relative",
+      height: 140
+    }
+  }, function () {
+    var bp = boxPlotData;
+    var svgW = 700,
+      padL = 40,
+      padR = 20,
+      plotW = svgW - padL - padR;
+    function sx(val) {
+      return padL + val / 100 * plotW;
+    }
+    var boxTop = 35,
+      boxH = 50,
+      mid = boxTop + boxH / 2;
+    return /*#__PURE__*/React.createElement("svg", {
+      viewBox: "0 0 " + svgW + " 130",
+      style: {
+        width: "100%",
+        height: "100%"
+      },
+      preserveAspectRatio: "xMidYMid meet"
+    }, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(function (v) {
+      var xp = sx(v);
+      return /*#__PURE__*/React.createElement("g", {
+        key: v
+      }, /*#__PURE__*/React.createElement("line", {
+        x1: xp,
+        y1: 25,
+        x2: xp,
+        y2: 100,
+        stroke: cl.bdr,
+        strokeWidth: 1,
+        strokeDasharray: v % 20 === 0 ? "" : "3,3"
+      }), /*#__PURE__*/React.createElement("text", {
+        x: xp,
+        y: 118,
+        textAnchor: "middle",
+        fontSize: 10,
+        fill: cl.muted
+      }, v, "%"));
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: sx(bp.whiskerLo),
+      y1: mid,
+      x2: sx(bp.whiskerHi),
+      y2: mid,
+      stroke: cl.accent,
+      strokeWidth: 2
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: sx(bp.whiskerLo),
+      y1: boxTop + 8,
+      x2: sx(bp.whiskerLo),
+      y2: boxTop + boxH - 8,
+      stroke: cl.accent,
+      strokeWidth: 2
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: sx(bp.whiskerHi),
+      y1: boxTop + 8,
+      x2: sx(bp.whiskerHi),
+      y2: boxTop + boxH - 8,
+      stroke: cl.accent,
+      strokeWidth: 2
+    }), /*#__PURE__*/React.createElement("rect", {
+      x: sx(bp.q1),
+      y: boxTop,
+      width: sx(bp.q3) - sx(bp.q1),
+      height: boxH,
+      fill: cl.accent + "18",
+      stroke: cl.accent,
+      strokeWidth: 2,
+      rx: 4
+    }), /*#__PURE__*/React.createElement("line", {
+      x1: sx(bp.median),
+      y1: boxTop,
+      x2: sx(bp.median),
+      y2: boxTop + boxH,
+      stroke: cl.A,
+      strokeWidth: 3
+    }), bp.outliers.map(function (val, i) {
+      return /*#__PURE__*/React.createElement("circle", {
+        key: i,
+        cx: sx(val),
+        cy: mid,
+        r: 4,
+        fill: cl.F,
+        stroke: "#fff",
+        strokeWidth: 1.5
+      });
+    }), /*#__PURE__*/React.createElement("text", {
+      x: sx(bp.whiskerLo),
+      y: boxTop - 6,
+      textAnchor: "middle",
+      fontSize: 10,
+      fill: cl.muted,
+      fontWeight: 600
+    }, bp.whiskerLo, "%"), /*#__PURE__*/React.createElement("text", {
+      x: sx(bp.q1),
+      y: boxTop + boxH + 14,
+      textAnchor: "middle",
+      fontSize: 9,
+      fill: cl.muted
+    }, "Q1: ", bp.q1, "%"), /*#__PURE__*/React.createElement("text", {
+      x: sx(bp.median),
+      y: boxTop - 6,
+      textAnchor: "middle",
+      fontSize: 11,
+      fill: cl.A,
+      fontWeight: 700
+    }, "Median: ", bp.median, "%"), /*#__PURE__*/React.createElement("text", {
+      x: sx(bp.q3),
+      y: boxTop + boxH + 14,
+      textAnchor: "middle",
+      fontSize: 9,
+      fill: cl.muted
+    }, "Q3: ", bp.q3, "%"), /*#__PURE__*/React.createElement("text", {
+      x: sx(bp.whiskerHi),
+      y: boxTop - 6,
+      textAnchor: "middle",
+      fontSize: 10,
+      fill: cl.muted,
+      fontWeight: 600
+    }, bp.whiskerHi, "%"));
+  }()), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      justifyContent: "center",
+      gap: 20,
+      marginTop: 8,
+      fontSize: 11,
+      color: cl.muted
+    }
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: cl.accent
+    }
+  }, "Box"), " = middle 50% of students (Q1\u2013Q3)"), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: cl.A
+    }
+  }, "|"), " = Median (", boxPlotData.median, "%)"), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, "Whiskers"), " = range excluding outliers"), boxPlotData.outliers.length > 0 ? /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: cl.F
+    }
+  }, "\u25CF"), " = Outliers (", boxPlotData.outliers.length, ")") : null)) : null)), /*#__PURE__*/React.createElement(Section, {
     title: "Student Insights",
     icon: Users,
     color: cl.hl
@@ -15765,7 +15962,7 @@ function GradebookAnalyzer() {
     setEditingCohort(null);
   }
 
-  // Switch classroom mode. If switching INTO contained with no data uploaded yet, show the setup wizard.
+  // Switch classroom mode
   function switchClassroomMode(newMode) {
     if (newMode === classroomMode) return;
     setClassroomMode(newMode);
@@ -15773,26 +15970,10 @@ function GradebookAnalyzer() {
     var anyDataLoaded = sections.some(function (s) {
       return s.data;
     });
-    if (newMode === "contained" && !anyDataLoaded) {
+    if (newMode === "contained") {
+      // Always show setup wizard — it handles both empty and pre-loaded states
       setContainedSetupNeeded(true);
-    } else if (newMode === "contained") {
-      // User flipped to contained mid-flight — relabel any default "Period N" sections to "Subject N" if untouched
-      setSections(function (prev) {
-        return prev.map(function (s) {
-          if (/^Period\s+\d+$/.test(s.name)) return {
-            id: s.id,
-            name: s.name.replace(/^Period/, "Subject"),
-            data: s.data,
-            fileName: s.fileName,
-            weights: s.weights,
-            pdfName: s.pdfName,
-            cohort: s.cohort || ""
-          };
-          return s;
-        });
-      });
     } else if (newMode === "departmentalized") {
-      // Going back: dismiss the wizard if it was open, and reverse the relabeling for default-named sections
       setContainedSetupNeeded(false);
       setSections(function (prev) {
         return prev.map(function (s) {
@@ -15805,7 +15986,15 @@ function GradebookAnalyzer() {
             pdfName: s.pdfName,
             cohort: ""
           };
-          return s;
+          return {
+            id: s.id,
+            name: s.name,
+            data: s.data,
+            fileName: s.fileName,
+            weights: s.weights,
+            pdfName: s.pdfName,
+            cohort: ""
+          };
         });
       });
     }
@@ -15814,9 +16003,8 @@ function GradebookAnalyzer() {
   // Apply the contained-mode subject wizard: replace existing sections with named-subject placeholders
   function applyContainedSetup(subjectNames, cohortLabels) {
     if (!subjectNames || !subjectNames.length) return;
-    var clean = subjectNames.slice(0, 6);
+    var clean = subjectNames.slice(0, 12);
     if (cohortLabels && cohortLabels.length > 1) {
-      // Create N subjects × M cohorts
       var newSections = [];
       var nextId = 1;
       cohortLabels.forEach(function (cLabel) {
@@ -15853,6 +16041,28 @@ function GradebookAnalyzer() {
     setContainedSetupNeeded(false);
     setTab("overview");
     setShowWeights(false);
+  }
+
+  // Apply organize-existing: update section names and cohorts in place, preserving all data
+  function applyExistingSetup(updatedSections) {
+    setSections(function (prev) {
+      return prev.map(function (orig, i) {
+        var upd = updatedSections[i];
+        if (!upd) return orig;
+        return {
+          id: orig.id,
+          name: upd.name || orig.name,
+          data: orig.data,
+          fileName: orig.fileName,
+          weights: orig.weights,
+          pdfName: orig.pdfName,
+          cohort: upd.cohort || ""
+        };
+      });
+    });
+    setActiveIdx(0);
+    setContainedSetupNeeded(false);
+    setTab("overview");
   }
   function tb(isActive) {
     return {
@@ -16127,7 +16337,12 @@ function GradebookAnalyzer() {
   }, sections.map(function (sec, i) {
     var isActive = i === activeIdx;
     var color = sectionColors[i % sectionColors.length];
-    var showCohort = classroomMode === "contained" && cohortKeys.length >= 2 && sec.cohort;
+    var hasCohorts = classroomMode === "contained" && sections.filter(function (s) {
+      return s.cohort;
+    }).length >= 2;
+    var showCohort = hasCohorts && sec.cohort;
+    var prevCohort = i > 0 ? sections[i - 1].cohort : "";
+    var cohortChanged = showCohort && i > 0 && sec.cohort !== prevCohort && prevCohort;
     return /*#__PURE__*/React.createElement("div", {
       key: sec.id,
       style: {
@@ -16135,7 +16350,16 @@ function GradebookAnalyzer() {
         alignItems: "center",
         position: "relative"
       }
-    }, /*#__PURE__*/React.createElement("button", {
+    }, cohortChanged ? /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 2,
+        height: 28,
+        background: cl.bdr,
+        borderRadius: 1,
+        margin: "0 4px",
+        flexShrink: 0
+      }
+    }) : null, /*#__PURE__*/React.createElement("button", {
       onClick: function () {
         setActiveIdx(i);
         setError(null);
@@ -16188,22 +16412,71 @@ function GradebookAnalyzer() {
       onClick: function (e) {
         e.stopPropagation();
       }
-    }) : /*#__PURE__*/React.createElement("span", null, sec.name, sec.weights && sec.weights.categories && sec.weights.categories.length > 0 ? /*#__PURE__*/React.createElement(Scale, {
+    }) : /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        gap: 1
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 4
+      }
+    }, sec.name, sec.weights && sec.weights.categories && sec.weights.categories.length > 0 ? /*#__PURE__*/React.createElement(Scale, {
       size: 11,
       style: {
-        marginLeft: 5,
         verticalAlign: -1,
         opacity: 0.5
       }
-    }) : null, showCohort && editingCohort !== i ? /*#__PURE__*/React.createElement("span", {
+    }) : null), showCohort && sec.cohort && editingCohort !== i ? /*#__PURE__*/React.createElement("span", {
+      onClick: function (e) {
+        e.stopPropagation();
+        startCohortEdit(i);
+      },
+      title: "Click to edit cohort: " + sec.cohort,
       style: {
-        marginLeft: 6,
-        fontSize: 11,
-        fontWeight: 600,
-        color: isActive ? cl.hl : cl.muted,
-        opacity: isActive ? 1 : 0.8
+        fontSize: 9,
+        fontWeight: 700,
+        letterSpacing: 0.5,
+        textTransform: "uppercase",
+        color: isActive ? "#fff" : cl.hl,
+        background: isActive ? cl.hl : cl.hl + "15",
+        padding: "1px 6px",
+        borderRadius: 3,
+        lineHeight: "14px",
+        cursor: "pointer",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 3
       }
-    }, "\xB7 ", sec.cohort) : null), editingCohort === i ? /*#__PURE__*/React.createElement("input", {
+    }, sec.cohort, /*#__PURE__*/React.createElement(Pencil, {
+      size: 8,
+      style: {
+        opacity: 0.6
+      }
+    })) : showCohort && !sec.cohort && editingCohort !== i ? /*#__PURE__*/React.createElement("span", {
+      onClick: function (e) {
+        e.stopPropagation();
+        startCohortEdit(i);
+      },
+      title: "Click to set cohort label",
+      style: {
+        fontSize: 9,
+        fontWeight: 600,
+        letterSpacing: 0.5,
+        textTransform: "uppercase",
+        color: cl.muted,
+        background: cl.bdr + "80",
+        padding: "1px 6px",
+        borderRadius: 3,
+        lineHeight: "14px",
+        cursor: "pointer",
+        fontStyle: "italic"
+      }
+    }, "+ cohort") : null), editingCohort === i ? /*#__PURE__*/React.createElement("input", {
       type: "text",
       value: tempCohort,
       onChange: function (e) {
@@ -16349,7 +16622,9 @@ function GradebookAnalyzer() {
       padding: "28px 24px 60px"
     }
   }, containedSetupNeeded ? /*#__PURE__*/React.createElement(ContainedSetupWizard, {
+    existingSections: sections,
     onApply: applyContainedSetup,
+    onApplyExisting: applyExistingSetup,
     onCancel: function () {
       setContainedSetupNeeded(false);
       if (!sections.some(function (s) {
@@ -16800,9 +17075,60 @@ function GradebookAnalyzer() {
 /* ─── CONTAINED SETUP WIZARD ──────────────────── */
 function ContainedSetupWizard({
   onApply,
-  onCancel
+  onApplyExisting,
+  onCancel,
+  existingSections
 }) {
-  // Pre-checked defaults; teacher can also add custom subjects
+  var hasData = existingSections && existingSections.some(function (s) {
+    return s.data;
+  });
+  // "Organize existing" mode state
+  var [orgSections, setOrgSections] = useState(function () {
+    if (!hasData) return [];
+    return existingSections.map(function (s) {
+      return {
+        id: s.id,
+        name: s.name,
+        cohort: s.cohort || "",
+        fileName: s.fileName,
+        hasData: !!s.data
+      };
+    });
+  });
+  var [orgUseCohorts, setOrgUseCohorts] = useState(function () {
+    return hasData && existingSections.some(function (s) {
+      return s.cohort;
+    });
+  });
+  function updateOrgName(idx, val) {
+    setOrgSections(function (p) {
+      var n = p.slice();
+      n[idx] = Object.assign({}, n[idx], {
+        name: val
+      });
+      return n;
+    });
+  }
+  function updateOrgCohort(idx, val) {
+    setOrgSections(function (p) {
+      var n = p.slice();
+      n[idx] = Object.assign({}, n[idx], {
+        cohort: val
+      });
+      return n;
+    });
+  }
+  function applyAllSameCohort(val) {
+    setOrgSections(function (p) {
+      return p.map(function (s) {
+        return Object.assign({}, s, {
+          cohort: val
+        });
+      });
+    });
+  }
+
+  // Fresh-start mode state
   var [selected, setSelected] = useState(function () {
     var m = {};
     CONTAINED_DEFAULT_SUBJECTS.forEach(function (s) {
@@ -16812,7 +17138,6 @@ function ContainedSetupWizard({
   });
   var [custom, setCustom] = useState([]);
   var [newSubject, setNewSubject] = useState("");
-  // Cohort support
   var [useCohorts, setUseCohorts] = useState(false);
   var [cohortLabels, setCohortLabels] = useState(["Cohort A", "Cohort B"]);
   var [newCohortLabel, setNewCohortLabel] = useState("");
@@ -16893,6 +17218,276 @@ function ContainedSetupWizard({
   var canApply = finalSubjects.length >= 1 && (useCohorts ? totalSections <= 12 && cohortLabels.length >= 2 && cohortLabels.every(function (l) {
     return l.trim();
   }) : finalSubjects.length <= 12);
+  var orgCanApply = hasData && orgSections.every(function (s) {
+    return s.name.trim();
+  }) && (!orgUseCohorts || orgSections.every(function (s) {
+    return s.cohort.trim();
+  }));
+  var orgCohortSet = orgUseCohorts ? orgSections.reduce(function (acc, s) {
+    if (s.cohort && acc.indexOf(s.cohort) === -1) acc.push(s.cohort);
+    return acc;
+  }, []) : [];
+  if (hasData) {
+    return /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: 680,
+        margin: "20px auto",
+        background: cl.card,
+        border: "1px solid " + cl.bdr,
+        borderRadius: 16,
+        padding: "32px 36px"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        alignItems: "center",
+        gap: 14,
+        marginBottom: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        background: cl.hl + "15",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }
+    }, /*#__PURE__*/React.createElement(BookOpen, {
+      size: 22,
+      color: cl.hl
+    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h2", {
+      style: {
+        fontSize: 22,
+        fontWeight: 800,
+        color: cl.accent,
+        margin: 0
+      }
+    }, "Organize your contained classroom"), /*#__PURE__*/React.createElement("p", {
+      style: {
+        fontSize: 13,
+        color: cl.muted,
+        margin: "4px 0 0"
+      }
+    }, "Your gradebooks are already loaded. Rename subjects and assign cohort labels below. All existing data will be preserved."))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 20,
+        marginBottom: 16,
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 13,
+        color: cl.muted
+      }
+    }, "Do your sections have multiple cohorts?"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "inline-flex",
+        background: cl.bdr,
+        borderRadius: 8,
+        padding: 3
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: function () {
+        setOrgUseCohorts(false);
+      },
+      style: {
+        padding: "5px 14px",
+        borderRadius: 6,
+        cursor: "pointer",
+        fontSize: 12,
+        fontWeight: !orgUseCohorts ? 700 : 500,
+        border: "none",
+        background: !orgUseCohorts ? cl.card : "transparent",
+        color: !orgUseCohorts ? cl.accent : cl.muted,
+        boxShadow: !orgUseCohorts ? "0 1px 3px rgba(0,0,0,0.1)" : "none"
+      }
+    }, "No cohorts"), /*#__PURE__*/React.createElement("button", {
+      onClick: function () {
+        setOrgUseCohorts(true);
+      },
+      style: {
+        padding: "5px 14px",
+        borderRadius: 6,
+        cursor: "pointer",
+        fontSize: 12,
+        fontWeight: orgUseCohorts ? 700 : 500,
+        border: "none",
+        background: orgUseCohorts ? cl.card : "transparent",
+        color: orgUseCohorts ? cl.accent : cl.muted,
+        boxShadow: orgUseCohorts ? "0 1px 3px rgba(0,0,0,0.1)" : "none"
+      }
+    }, "Multiple cohorts"))), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "grid",
+        gridTemplateColumns: orgUseCohorts ? "40px 1fr 1fr 200px" : "40px 1fr 200px",
+        gap: 8,
+        padding: "0 0 6px",
+        borderBottom: "1px solid " + cl.bdr
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: cl.muted,
+        fontWeight: 600
+      }
+    }, "#"), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: cl.muted,
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: 0.5
+      }
+    }, "Subject Name"), orgUseCohorts ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: cl.muted,
+        fontWeight: 600,
+        textTransform: "uppercase",
+        letterSpacing: 0.5
+      }
+    }, "Cohort Label") : null, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10,
+        color: cl.muted,
+        fontWeight: 600
+      }
+    }, "File")), orgSections.map(function (sec, i) {
+      return /*#__PURE__*/React.createElement("div", {
+        key: sec.id,
+        style: {
+          display: "grid",
+          gridTemplateColumns: orgUseCohorts ? "40px 1fr 1fr 200px" : "40px 1fr 200px",
+          gap: 8,
+          alignItems: "center",
+          padding: "6px 0",
+          borderBottom: "1px solid " + cl.bdr + "40"
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 12,
+          color: cl.muted,
+          fontWeight: 600
+        }
+      }, i + 1), /*#__PURE__*/React.createElement("input", {
+        type: "text",
+        value: sec.name,
+        onChange: function (e) {
+          updateOrgName(i, e.target.value);
+        },
+        style: {
+          fontSize: 13,
+          fontWeight: 600,
+          color: cl.accent,
+          border: "1px solid " + cl.bdr,
+          borderRadius: 6,
+          padding: "6px 10px",
+          outline: "none",
+          background: cl.bg
+        }
+      }), orgUseCohorts ? /*#__PURE__*/React.createElement("input", {
+        type: "text",
+        value: sec.cohort,
+        onChange: function (e) {
+          updateOrgCohort(i, e.target.value);
+        },
+        placeholder: "e.g. 3rd Grade",
+        style: {
+          fontSize: 12,
+          fontWeight: 500,
+          color: cl.hl,
+          border: "1px solid " + (sec.cohort ? cl.hl + "40" : cl.bdr),
+          borderRadius: 6,
+          padding: "6px 10px",
+          outline: "none",
+          background: sec.cohort ? cl.hl + "06" : cl.bg
+        }
+      }) : null, /*#__PURE__*/React.createElement("span", {
+        style: {
+          fontSize: 11,
+          color: sec.hasData ? cl.A : cl.muted,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap"
+        }
+      }, sec.hasData ? "✓ " + sec.fileName : "No file yet"));
+    })), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 18,
+        padding: "12px 16px",
+        background: cl.warm,
+        borderRadius: 8,
+        fontSize: 12,
+        color: cl.muted,
+        lineHeight: 1.6,
+        display: "flex",
+        gap: 10
+      }
+    }, /*#__PURE__*/React.createElement(Info, {
+      size: 14,
+      color: cl.hl,
+      style: {
+        flexShrink: 0,
+        marginTop: 1
+      }
+    }), /*#__PURE__*/React.createElement("span", null, "All gradebook data will be preserved. Only names and cohort labels will change. You can edit these anytime from the section tabs.")), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 20,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        color: cl.muted
+      }
+    }, orgSections.length, " section", orgSections.length > 1 ? "s" : "", orgUseCohorts && orgCohortSet.length > 0 ? " · " + orgCohortSet.length + " cohort" + (orgCohortSet.length > 1 ? "s" : "") : ""), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: "flex",
+        gap: 8
+      }
+    }, /*#__PURE__*/React.createElement("button", {
+      onClick: onCancel,
+      style: {
+        background: "none",
+        border: "1px solid " + cl.bdr,
+        borderRadius: 7,
+        padding: "9px 18px",
+        cursor: "pointer",
+        fontSize: 13,
+        color: cl.muted,
+        fontWeight: 500
+      }
+    }, "Cancel"), /*#__PURE__*/React.createElement("button", {
+      onClick: function () {
+        if (orgCanApply && onApplyExisting) onApplyExisting(orgSections);
+      },
+      disabled: !orgCanApply,
+      style: {
+        background: orgCanApply ? cl.accent : cl.bdr,
+        color: "#fff",
+        border: "none",
+        borderRadius: 7,
+        padding: "10px 22px",
+        cursor: orgCanApply ? "pointer" : "not-allowed",
+        fontSize: 13,
+        fontWeight: 700,
+        opacity: orgCanApply ? 1 : 0.5
+      }
+    }, "Apply Changes \u2192"))));
+  }
   return /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 680,
@@ -17351,8 +17946,7 @@ function ContainedSetupWizard({
     }
   }, "Continue \u2192"))));
 }
-
-  ReactDOM.createRoot(document.getElementById('root')).render(
+  ReactDOM.createRoot(document.getElementById("root")).render(
     React.createElement(GradebookAnalyzer)
   );
   </script>
