@@ -16890,9 +16890,9 @@ function ContainedSetupWizard({
     }
   });
   var totalSections = useCohorts ? finalSubjects.length * cohortLabels.length : finalSubjects.length;
-  var canApply = finalSubjects.length >= 1 && (useCohorts ? totalSections <= 6 && cohortLabels.length >= 2 && cohortLabels.every(function (l) {
+  var canApply = finalSubjects.length >= 1 && (useCohorts ? totalSections <= 12 && cohortLabels.length >= 2 && cohortLabels.every(function (l) {
     return l.trim();
-  }) : finalSubjects.length <= 6);
+  }) : finalSubjects.length <= 12);
   return /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 680,
@@ -17276,7 +17276,7 @@ function ContainedSetupWizard({
     }
   }, /*#__PURE__*/React.createElement(Plus, {
     size: 11
-  }), " Add")) : null, totalSections > 6 ? /*#__PURE__*/React.createElement("div", {
+  }), " Add")) : null, totalSections > 12 ? /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 8,
       fontSize: 12,
@@ -17302,7 +17302,7 @@ function ContainedSetupWizard({
       flexShrink: 0,
       marginTop: 1
     }
-  }), /*#__PURE__*/React.createElement("span", null, "You can add, rename, or remove subjects later from the section tabs at the top \u2014 this wizard is just to get you started quickly. ", useCohorts ? "Each section tab will show its cohort label." : "Maximum 6 subjects.")), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("span", null, "You can add, rename, or remove subjects later from the section tabs at the top \u2014 this wizard is just to get you started quickly. ", useCohorts ? "Each section tab will show its cohort label." : "Maximum 12 subjects.")), /*#__PURE__*/React.createElement("div", {
     style: {
       marginTop: 24,
       display: "flex",
@@ -17314,7 +17314,7 @@ function ContainedSetupWizard({
   }, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
-      color: totalSections > 6 ? cl.F : cl.muted
+      color: totalSections > 12 ? cl.F : cl.muted
     }
   }, finalSubjects.length === 0 ? "Pick at least one subject" : totalSections > 12 ? "Too many sections (max 12) — reduce subjects or cohorts" : useCohorts ? finalSubjects.length + " subject" + (finalSubjects.length > 1 ? "s" : "") + " × " + cohortLabels.length + " cohorts = " + totalSections + " sections" : finalSubjects.length + " subject" + (finalSubjects.length > 1 ? "s" : "") + " selected: " + finalSubjects.join(", ")), /*#__PURE__*/React.createElement("div", {
     style: {
