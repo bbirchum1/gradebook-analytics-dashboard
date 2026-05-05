@@ -30,13 +30,8 @@
   <script src="https://cdn.jsdelivr.net/npm/recharts@2.12.7/umd/Recharts.min.js"></script>
 
   <script>
-  // Verify dependencies loaded
-  if (typeof React === 'undefined') { document.getElementById('root').innerHTML = '<div style="padding:40px;color:red;">Error: React failed to load. Check your internet connection and try refreshing.</div>'; throw new Error('React not loaded'); }
-  if (typeof Recharts === 'undefined') { document.getElementById('root').innerHTML = '<div style="padding:40px;color:red;">Error: Recharts failed to load. Check your internet connection and try refreshing.</div>'; throw new Error('Recharts not loaded'); }
+  if (typeof React === 'undefined') { document.getElementById('root').innerHTML = '<div style="padding:40px;color:red;">Error: React failed to load. Check your internet connection and try refreshing.<\/div>'; throw new Error('React not loaded'); }
 
-  // ============================================================
-  // STORAGE LAYER — swap for Azure Functions API later
-  // ============================================================
   var storageLayer = {
     get: function(key) {
       return new Promise(function(resolve, reject) {
@@ -73,9 +68,6 @@
     }
   };
 
-  // ============================================================
-  // GLOBALS FROM CDN
-  // ============================================================
   var useState = React.useState, useMemo = React.useMemo, useCallback = React.useCallback, useRef = React.useRef, useEffect = React.useEffect;
   var BarChart = Recharts.BarChart, Bar = Recharts.Bar, XAxis = Recharts.XAxis, YAxis = Recharts.YAxis,
       CartesianGrid = Recharts.CartesianGrid, Tooltip = Recharts.Tooltip, ResponsiveContainer = Recharts.ResponsiveContainer,
@@ -83,9 +75,6 @@
       Cell = Recharts.Cell, ScatterChart = Recharts.ScatterChart, Scatter = Recharts.Scatter, Legend = Recharts.Legend,
       ReferenceLine = Recharts.ReferenceLine, AreaChart = Recharts.AreaChart, Area = Recharts.Area;
 
-  // ============================================================
-  // SVG ICON COMPONENTS
-  // ============================================================
   function makeIcon(paths) {
     return function(props) {
       var size = props.size || 24;
@@ -130,9 +119,6 @@
   var Mail=makeIcon([{tag:"path",attrs:{d:"M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"}},{tag:"polyline",attrs:{points:"22,6 12,13 2,6"}}]);
   var Calculator=makeIcon([{tag:"rect",attrs:{x:"4",y:"2",width:"16",height:"20",rx:"2"}},{tag:"line",attrs:{x1:"8",y1:"6",x2:"16",y2:"6"}},{tag:"line",attrs:{x1:"16",y1:"14",x2:"16",y2:"18"}},{tag:"line",attrs:{x1:"8",y1:"10",x2:"8",y2:"10.01"}},{tag:"line",attrs:{x1:"12",y1:"10",x2:"12",y2:"10.01"}},{tag:"line",attrs:{x1:"16",y1:"10",x2:"16",y2:"10.01"}},{tag:"line",attrs:{x1:"8",y1:"14",x2:"8",y2:"14.01"}},{tag:"line",attrs:{x1:"12",y1:"14",x2:"12",y2:"14.01"}},{tag:"line",attrs:{x1:"8",y1:"18",x2:"8",y2:"18.01"}},{tag:"line",attrs:{x1:"12",y1:"18",x2:"12",y2:"18.01"}}]);
 
-  // ============================================================
-  // APPLICATION CODE (pre-compiled)
-  // ============================================================
 var cl = {
   A: "#0d7c5f",
   B: "#34a88e",
@@ -4172,17 +4158,17 @@ function MissingWorkView({
   }, [students, assignments]);
   function downloadForStudent(s) {
     var a = s.analysis;
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Missing Work - ' + s.name + '</title>' + '<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui,sans-serif;padding:32px;color:#1e293b;}' + 'table{width:100%;border-collapse:collapse;margin-top:12px;}th,td{padding:8px 12px;border:1px solid #e2e8f0;text-align:left;font-size:13px;}' + 'th{background:#f5f7fa;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;}' + '.chk{width:18px;height:18px;border:2px solid #cbd5e1;border-radius:3px;}' + '@media print{@page{margin:0.5in;}}</style></head><body>' + '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;">' + '<div><div style="font-size:18px;font-weight:800;color:#1a365d;">Missing Work Checklist</div>' + '<div style="font-size:22px;font-weight:700;color:#1a365d;margin-top:4px;">' + s.name + '</div></div>' + '<div style="text-align:right;font-size:12px;color:#64748b;">Current: ' + s.average + '% (' + s.grade + ')<br/>' + (a.totalIncrease > 0 ? 'Projected: ' + a.allCompletedAvg + '% (est. at class-avg scores)<br/>' : '') + new Date().toLocaleDateString("en-US", {
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Missing Work - ' + s.name + '<\/title>' + '<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:system-ui,sans-serif;padding:32px;color:#1e293b;}' + 'table{width:100%;border-collapse:collapse;margin-top:12px;}th,td{padding:8px 12px;border:1px solid #e2e8f0;text-align:left;font-size:13px;}' + 'th{background:#f5f7fa;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;}' + '.chk{width:18px;height:18px;border:2px solid #cbd5e1;border-radius:3px;}' + '@media print{@page{margin:0.5in;}}<\/style><\/head><body>' + '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;">' + '<div><div style="font-size:18px;font-weight:800;color:#1a365d;">Missing Work Checklist<\/div>' + '<div style="font-size:22px;font-weight:700;color:#1a365d;margin-top:4px;">' + s.name + '<\/div><\/div>' + '<div style="text-align:right;font-size:12px;color:#64748b;">Current: ' + s.average + '% (' + s.grade + ')<br/>' + (a.totalIncrease > 0 ? 'Projected: ' + a.allCompletedAvg + '% (est. at class-avg scores)<br/>' : '') + new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric"
-    }) + '</div></div>' + '<table><thead><tr><th style="width:28px;"></th><th>Assignment</th><th>Priority</th><th>Est. Impact</th><th>Est. Avg</th></tr></thead><tbody>';
+    }) + '<\/div><\/div>' + '<table><thead><tr><th style="width:28px;"><\/th><th>Assignment<\/th><th>Priority<\/th><th>Est. Impact<\/th><th>Est. Avg<\/th><\/tr><\/thead><tbody>';
     a.missing.forEach(function (m, i) {
-      html += '<tr><td><div class="chk"></div></td><td>' + m.name + '</td>' + '<td style="color:' + (i === 0 ? '#c4314b' : i < 3 ? '#d97035' : '#64748b') + ';font-weight:600;">' + (i === 0 ? 'HIGH' : i < 3 ? 'MED' : 'LOW') + '</td>' + '<td style="font-weight:600;color:#0d7c5f;">+' + m.impact + ' pts</td><td>' + m.projectedAvg + '%</td></tr>';
+      html += '<tr><td><div class="chk"><\/div><\/td><td>' + m.name + '<\/td>' + '<td style="color:' + (i === 0 ? '#c4314b' : i < 3 ? '#d97035' : '#64748b') + ';font-weight:600;">' + (i === 0 ? 'HIGH' : i < 3 ? 'MED' : 'LOW') + '<\/td>' + '<td style="font-weight:600;color:#0d7c5f;">+' + m.impact + ' pts<\/td><td>' + m.projectedAvg + '%<\/td><\/tr>';
     });
-    html += '</tbody></table>';
-    if (a.projections && a.projections.length > 1) html += '<div style="margin-top:16px;padding:12px;background:#f5f7fa;border-radius:6px;font-size:13px;"><strong>Quick win:</strong> Completing the top ' + Math.min(3, a.projections.length) + ' is projected to bring the estimated grade to ~' + a.projections[Math.min(3, a.projections.length) - 1].projectedAvg + '%.</div>';
-    html += '</body></html>';
+    html += '<\/tbody><\/table>';
+    if (a.projections && a.projections.length > 1) html += '<div style="margin-top:16px;padding:12px;background:#f5f7fa;border-radius:6px;font-size:13px;"><strong>Quick win:<\/strong> Completing the top ' + Math.min(3, a.projections.length) + ' is projected to bring the estimated grade to ~' + a.projections[Math.min(3, a.projections.length) - 1].projectedAvg + '%.<\/div>';
+    html += '<\/body><\/html>';
     var blob = new Blob([html], {
       type: "text/html"
     });
@@ -6044,48 +6030,48 @@ function ConferenceTab({
       var isNotDue = r.score === null;
       var diffColor = r.diff === null ? "#64748b" : r.diff === 0 ? "#64748b" : r.diff > 0 ? "#0d7c5f" : "#c4314b";
       var diffText = r.diff === null ? "—" : r.diff === 0 ? "Same as class" : r.diff > 0 ? "+" + r.diff + " pts" : r.diff + " pts";
-      return '<tr style="border-bottom:1px solid #e2e8f0;">' + '<td style="padding:10px 14px;font-weight:500;">' + r.name + '</td>' + '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + (isMissing ? "#c4314b" : isNotDue ? "#64748b" : "#1e293b") + ';">' + (isMissing ? "Missing" : isNotDue ? "Not Due" : r.score + "%") + '</td>' + '<td style="padding:10px 14px;text-align:center;">' + (isMissing || isNotDue ? "—" : r.grade) + '</td>' + '<td style="padding:10px 14px;text-align:center;color:#64748b;">' + r.classAvg + '%</td>' + '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + diffColor + ';">' + diffText + '</td>' + '</tr>';
+      return '<tr style="border-bottom:1px solid #e2e8f0;">' + '<td style="padding:10px 14px;font-weight:500;">' + r.name + '<\/td>' + '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + (isMissing ? "#c4314b" : isNotDue ? "#64748b" : "#1e293b") + ';">' + (isMissing ? "Missing" : isNotDue ? "Not Due" : r.score + "%") + '<\/td>' + '<td style="padding:10px 14px;text-align:center;">' + (isMissing || isNotDue ? "—" : r.grade) + '<\/td>' + '<td style="padding:10px 14px;text-align:center;color:#64748b;">' + r.classAvg + '%<\/td>' + '<td style="padding:10px 14px;text-align:center;font-weight:600;color:' + diffColor + ';">' + diffText + '<\/td>' + '<\/tr>';
     }).join("");
     var bestHtml = best.map(function (a) {
-      return '<li style="margin-bottom:4px;">' + a.name + ' — <strong>' + a.score + '%</strong></li>';
+      return '<li style="margin-bottom:4px;">' + a.name + ' — <strong>' + a.score + '%<\/strong><\/li>';
     }).join("");
     var worstHtml = worst.map(function (a) {
-      return '<li style="margin-bottom:4px;">' + a.name + ' — <strong>' + a.score + '%</strong></li>';
+      return '<li style="margin-bottom:4px;">' + a.name + ' — <strong>' + a.score + '%<\/strong><\/li>';
     }).join("");
     var pointsHtml = points.map(function (p) {
-      return '<li style="margin-bottom:6px;line-height:1.5;">' + p + '</li>';
+      return '<li style="margin-bottom:6px;line-height:1.5;">' + p + '<\/li>';
     }).join("");
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' + '<title>Conference Prep Report — ' + s.name + '</title>' + '<style>' + '*{margin:0;padding:0;box-sizing:border-box;}' + 'body{font-family:system-ui,-apple-system,sans-serif;color:#1e293b;background:#fff;padding:0;}' + '@media print{body{padding:0;}.no-print{display:none!important;}@page{margin:0.6in;}}' + '</style></head><body>' + '<div style="background:linear-gradient(135deg,#1a365d,#2b4c7e);color:#fff;padding:32px 40px;">' + '<div style="font-size:22px;font-weight:800;margin-bottom:4px;">Optima Academy Online</div>' + '<div style="font-size:14px;opacity:0.7;">Student Conference Prep Report</div>' + '</div>' + '<div style="padding:24px 40px;border-bottom:2px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">' + '<div style="font-size:24px;font-weight:700;color:#1a365d;">' + s.name + '</div>' + '<div style="font-size:13px;color:#64748b;">Generated ' + new Date().toLocaleDateString("en-US", {
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' + '<title>Conference Prep Report — ' + s.name + '<\/title>' + '<style>' + '*{margin:0;padding:0;box-sizing:border-box;}' + 'body{font-family:system-ui,-apple-system,sans-serif;color:#1e293b;background:#fff;padding:0;}' + '@media print{body{padding:0;}.no-print{display:none!important;}@page{margin:0.6in;}}' + '<\/style><\/head><body>' + '<div style="background:linear-gradient(135deg,#1a365d,#2b4c7e);color:#fff;padding:32px 40px;">' + '<div style="font-size:22px;font-weight:800;margin-bottom:4px;">Optima Academy Online<\/div>' + '<div style="font-size:14px;opacity:0.7;">Student Conference Prep Report<\/div>' + '<\/div>' + '<div style="padding:24px 40px;border-bottom:2px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">' + '<div style="font-size:24px;font-weight:700;color:#1a365d;">' + s.name + '<\/div>' + '<div style="font-size:13px;color:#64748b;">Generated ' + new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric"
-    }) + '</div>' + '</div>';
+    }) + '<\/div>' + '<\/div>';
 
     // Stats row - conditionally include each card
     var statsCards = "";
     if (vis.stats) {
-      statsCards += '<div style="flex:1;min-width:140px;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">' + '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Overall Average</div>' + '<div style="font-size:28px;font-weight:700;color:' + gradeColor + ';">' + s.average + '%</div>' + '<div style="font-size:12px;color:#64748b;">Grade: ' + s.grade + '</div></div>';
-      statsCards += '<div style="flex:1;min-width:140px;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">' + '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Missing Work</div>' + '<div style="font-size:28px;font-weight:700;color:' + (missing > 0 ? "#c4314b" : "#0d7c5f") + ';">' + missing + '</div>' + '<div style="font-size:12px;color:#64748b;">' + (missing > 0 ? Math.round(missing / assignments.length * 100) + "% of assignments" : "All submitted") + '</div></div>';
+      statsCards += '<div style="flex:1;min-width:140px;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">' + '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Overall Average<\/div>' + '<div style="font-size:28px;font-weight:700;color:' + gradeColor + ';">' + s.average + '%<\/div>' + '<div style="font-size:12px;color:#64748b;">Grade: ' + s.grade + '<\/div><\/div>';
+      statsCards += '<div style="flex:1;min-width:140px;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">' + '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Missing Work<\/div>' + '<div style="font-size:28px;font-weight:700;color:' + (missing > 0 ? "#c4314b" : "#0d7c5f") + ';">' + missing + '<\/div>' + '<div style="font-size:12px;color:#64748b;">' + (missing > 0 ? Math.round(missing / assignments.length * 100) + "% of assignments" : "All submitted") + '<\/div><\/div>';
     }
     if (vis.percentile) {
-      statsCards += '<div style="flex:1;min-width:140px;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">' + '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Percentile</div>' + '<div style="font-size:28px;font-weight:700;color:' + (percentile >= 75 ? "#0d7c5f" : percentile >= 50 ? "#34a88e" : "#d97035") + ';">' + percentile + '<span style="font-size:16px;">th</span></div>' + '<div style="font-size:12px;color:#64748b;">' + diffFromClass + '% vs class avg</div></div>';
+      statsCards += '<div style="flex:1;min-width:140px;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;">' + '<div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Percentile<\/div>' + '<div style="font-size:28px;font-weight:700;color:' + (percentile >= 75 ? "#0d7c5f" : percentile >= 50 ? "#34a88e" : "#d97035") + ';">' + percentile + '<span style="font-size:16px;">th<\/span><\/div>' + '<div style="font-size:12px;color:#64748b;">' + diffFromClass + '% vs class avg<\/div><\/div>';
     }
-    if (statsCards) html += '<div style="padding:24px 40px;display:flex;gap:20px;flex-wrap:wrap;">' + statsCards + '</div>';
+    if (statsCards) html += '<div style="padding:24px 40px;display:flex;gap:20px;flex-wrap:wrap;">' + statsCards + '<\/div>';
 
     // Strengths & Weaknesses
     if (vis.strengths) {
-      html += '<div style="padding:0 40px 24px;display:flex;gap:20px;flex-wrap:wrap;">' + '<div style="flex:1;min-width:200px;border:1px solid #e2e8f0;border-radius:10px;padding:18px 22px;">' + '<div style="font-size:15px;font-weight:700;color:#0d7c5f;margin-bottom:10px;">Strongest Assignments</div>' + '<ul style="list-style:none;font-size:14px;color:#1e293b;">' + bestHtml + '</ul></div>' + '<div style="flex:1;min-width:200px;border:1px solid #e2e8f0;border-radius:10px;padding:18px 22px;">' + '<div style="font-size:15px;font-weight:700;color:#c4314b;margin-bottom:10px;">Focus Areas</div>' + '<ul style="list-style:none;font-size:14px;color:#1e293b;">' + worstHtml + '</ul></div>' + '<div style="flex:1;min-width:220px;background:#1a365d;border-radius:10px;padding:18px 22px;color:#fff;">' + '<div style="font-size:15px;font-weight:700;margin-bottom:10px;">Talking Points</div>' + '<ul style="list-style:none;font-size:13px;line-height:1.6;">' + pointsHtml + '</ul></div>' + '</div>';
+      html += '<div style="padding:0 40px 24px;display:flex;gap:20px;flex-wrap:wrap;">' + '<div style="flex:1;min-width:200px;border:1px solid #e2e8f0;border-radius:10px;padding:18px 22px;">' + '<div style="font-size:15px;font-weight:700;color:#0d7c5f;margin-bottom:10px;">Strongest Assignments<\/div>' + '<ul style="list-style:none;font-size:14px;color:#1e293b;">' + bestHtml + '<\/ul><\/div>' + '<div style="flex:1;min-width:200px;border:1px solid #e2e8f0;border-radius:10px;padding:18px 22px;">' + '<div style="font-size:15px;font-weight:700;color:#c4314b;margin-bottom:10px;">Focus Areas<\/div>' + '<ul style="list-style:none;font-size:14px;color:#1e293b;">' + worstHtml + '<\/ul><\/div>' + '<div style="flex:1;min-width:220px;background:#1a365d;border-radius:10px;padding:18px 22px;color:#fff;">' + '<div style="font-size:15px;font-weight:700;margin-bottom:10px;">Talking Points<\/div>' + '<ul style="list-style:none;font-size:13px;line-height:1.6;">' + pointsHtml + '<\/ul><\/div>' + '<\/div>';
     }
 
     // Assignment table
     if (vis.details) {
-      html += '<div style="padding:0 40px 32px;">' + '<div style="font-size:16px;font-weight:700;color:#1a365d;margin-bottom:12px;">Assignment Details</div>' + '<table style="width:100%;border-collapse:collapse;font-size:13px;">' + '<thead><tr style="border-bottom:2px solid #e2e8f0;">' + '<th style="padding:10px 14px;text-align:left;color:#64748b;font-size:11px;letter-spacing:0.5px;">Assignment</th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Score</th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Grade</th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Class Average</th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Compared to Class</th>' + '</tr></thead><tbody>' + rowsHtml + '</tbody></table></div>';
+      html += '<div style="padding:0 40px 32px;">' + '<div style="font-size:16px;font-weight:700;color:#1a365d;margin-bottom:12px;">Assignment Details<\/div>' + '<table style="width:100%;border-collapse:collapse;font-size:13px;">' + '<thead><tr style="border-bottom:2px solid #e2e8f0;">' + '<th style="padding:10px 14px;text-align:left;color:#64748b;font-size:11px;letter-spacing:0.5px;">Assignment<\/th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Score<\/th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Grade<\/th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Class Average<\/th>' + '<th style="padding:10px 14px;text-align:center;color:#64748b;font-size:11px;letter-spacing:0.5px;">Compared to Class<\/th>' + '<\/tr><\/thead><tbody>' + rowsHtml + '<\/tbody><\/table><\/div>';
     }
 
     // Teacher notes (if any)
     var noteText = getNote();
     if (noteText) {
-      html += '<div style="padding:20px 40px;">' + '<div style="font-size:15px;font-weight:700;color:#1a365d;margin-bottom:10px;">Teacher Notes</div>' + '<div style="padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;line-height:1.7;white-space:pre-wrap;">' + noteText.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '</div>' + '</div>';
+      html += '<div style="padding:20px 40px;">' + '<div style="font-size:15px;font-weight:700;color:#1a365d;margin-bottom:10px;">Teacher Notes<\/div>' + '<div style="padding:14px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;line-height:1.7;white-space:pre-wrap;">' + noteText.replace(/</g, "&lt;").replace(/>/g, "&gt;") + '<\/div>' + '<\/div>';
     }
 
     // Footer
@@ -6093,7 +6079,7 @@ function ConferenceTab({
       year: "numeric",
       month: "long",
       day: "numeric"
-    }) + '</div></body></html>';
+    }) + '<\/div><\/body><\/html>';
     var blob = new Blob([html], {
       type: "text/html"
     });
@@ -8686,11 +8672,11 @@ function OutreachTab({
     function esc(s) {
       return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Message Drafts</title>' + '<style>*{box-sizing:border-box;}body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1e293b;background:#f5f7fa;}' + 'h1{font-size:22px;color:#1a365d;margin:0 0 4px;}.lead{color:#64748b;font-size:13px;margin-bottom:24px;}' + '.email{border:1px solid #e2e8f0;border-radius:12px;padding:22px 28px;margin-bottom:18px;background:#fff;page-break-inside:avoid;}' + '.h{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;}' + '.n{font-size:18px;font-weight:700;color:#1a365d;margin:4px 0 14px;}' + '.s{font-size:14px;font-weight:600;color:#1a365d;background:#f5f7fa;padding:10px 14px;border-radius:6px;margin-bottom:14px;}' + '.em{font-size:12px;color:#64748b;margin-bottom:6px;}' + '.b{font-size:13px;line-height:1.7;white-space:pre-wrap;color:#1e293b;}' + '@media print{body{background:#fff;padding:0;}@page{margin:0.5in;}.email{page-break-after:always;border:none;border-bottom:1px solid #e2e8f0;border-radius:0;}}' + '</style></head><body>' + '<h1>Message Drafts</h1>' + '<div class="lead">' + selCount + ' personalized draft' + (selCount > 1 ? "s" : "") + ' generated ' + new Date().toLocaleDateString("en-US", {
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Message Drafts<\/title>' + '<style>*{box-sizing:border-box;}body{font-family:system-ui,-apple-system,sans-serif;max-width:820px;margin:0 auto;padding:32px;color:#1e293b;background:#f5f7fa;}' + 'h1{font-size:22px;color:#1a365d;margin:0 0 4px;}.lead{color:#64748b;font-size:13px;margin-bottom:24px;}' + '.email{border:1px solid #e2e8f0;border-radius:12px;padding:22px 28px;margin-bottom:18px;background:#fff;page-break-inside:avoid;}' + '.h{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;}' + '.n{font-size:18px;font-weight:700;color:#1a365d;margin:4px 0 14px;}' + '.s{font-size:14px;font-weight:600;color:#1a365d;background:#f5f7fa;padding:10px 14px;border-radius:6px;margin-bottom:14px;}' + '.em{font-size:12px;color:#64748b;margin-bottom:6px;}' + '.b{font-size:13px;line-height:1.7;white-space:pre-wrap;color:#1e293b;}' + '@media print{body{background:#fff;padding:0;}@page{margin:0.5in;}.email{page-break-after:always;border:none;border-bottom:1px solid #e2e8f0;border-radius:0;}}' + '<\/style><\/head><body>' + '<h1>Message Drafts<\/h1>' + '<div class="lead">' + selCount + ' personalized draft' + (selCount > 1 ? "s" : "") + ' generated ' + new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric"
-    }) + '</div>';
+    }) + '<\/div>';
     selectedContexts.forEach(function (ctx, i) {
       var subject = getEditedSubject(ctx);
       var body = getEditedBody(ctx);
@@ -8702,9 +8688,9 @@ function OutreachTab({
       } else {
         gradeInfo = ctx.s.average + '% (' + ctx.s.grade + ')';
       }
-      html += '<div class="email"><div class="h">To</div><div class="n">' + esc(ctx.s.name) + ' &mdash; ' + gradeInfo + (ctx.missingCount > 0 ? ' &middot; ' + ctx.missingCount + ' missing' : '') + '</div>' + '<div class="s">Subject: ' + esc(subject) + '</div>' + '<div class="b">' + esc(body) + '</div></div>';
+      html += '<div class="email"><div class="h">To<\/div><div class="n">' + esc(ctx.s.name) + ' &mdash; ' + gradeInfo + (ctx.missingCount > 0 ? ' &middot; ' + ctx.missingCount + ' missing' : '') + '<\/div>' + '<div class="s">Subject: ' + esc(subject) + '<\/div>' + '<div class="b">' + esc(body) + '<\/div><\/div>';
     });
-    html += '</body></html>';
+    html += '<\/body><\/html>';
     var blob = new Blob([html], {
       type: "text/html"
     });
@@ -17366,9 +17352,6 @@ function ContainedSetupWizard({
   }, "Continue \u2192"))));
 }
 
-  // ============================================================
-  // MOUNT
-  // ============================================================
   ReactDOM.createRoot(document.getElementById('root')).render(
     React.createElement(GradebookAnalyzer)
   );
