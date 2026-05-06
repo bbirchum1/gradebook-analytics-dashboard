@@ -15620,6 +15620,10 @@ function HelpBot({
     }
 
     // ── Navigation help ──
+    if (lc.match(/contained|departmentalized|cohort|classroom.*mode/)) {
+      addMsg("bot", "Classroom modes:\n• Departmentalized — one subject, multiple periods\n• Contained — one teacher, multiple subjects (elementary style)\n\nToggle with the button in the top-right corner. Contained mode lets you link students across subjects and assign cohort labels like '3rd Grade' or '4th Grade'.");
+      return;
+    }
     if (lc.match(/copy|clipboard|draft/)) {
       addMsg("bot", "To copy a draft: find any message card with a 'Copy Draft' button, click it, and the text goes to your clipboard. The button changes to '✓ Copied to clipboard'.\n\nThen paste into your approved messaging platform. This tool creates text only — it does not send messages.");
       return;
@@ -15632,7 +15636,7 @@ function HelpBot({
       addMsg("bot", "Conference Prep gives you a per-student view with: auto-generated summary, strengths & focus areas, talking points, grade recovery projections, a notes area, and family message drafts.\n\nUse the section nav at the top to jump between areas. The 'Copy Talking Points' and 'Copy Conference Notes' buttons are the fastest way to prep.\n\nKeyboard shortcuts: ← → or J/K to navigate between students.");
       return;
     }
-    if (lc.match(/planner|simulate|retake|recovery|what.*if/)) {
+    if (lc.match(/planner|simulate|retake|recovery|what if /)) {
       addMsg("bot", "The Grade Planner has 4 tools:\n• Missing Work Impact — what happens if assignments are submitted\n• Retake / Redo — simulate new scores on any assignment\n• Target Grade Planner — what's needed to reach a specific grade\n• Recovery Path — fewest assignments to the next grade level\n\nAll results include a standardized summary card you can copy.");
       return;
     }
@@ -15640,16 +15644,12 @@ function HelpBot({
       addMsg("bot", "To customize message templates: go to Message Drafts, pick a template tile (like 'Missing Work Reminder'), edit the subject and body with smart fields like {STUDENT_FIRST}, then click Save.\n\nYour edits are used everywhere that template appears, including Overview action items.");
       return;
     }
-    if (lc.match(/contained|departmentalized|cohort|mode/)) {
-      addMsg("bot", "Classroom modes:\n• Departmentalized — one subject, multiple periods\n• Contained — one teacher, multiple subjects (elementary style)\n\nToggle with the button in the top-right corner. Contained mode lets you link students across subjects and assign cohort labels like '3rd Grade' or '4th Grade'.");
-      return;
-    }
     if (lc.match(/export|download|print/)) {
       addMsg("bot", "You can download:\n• Conference reports — Conference Prep > Download button\n• Missing work checklists — Students > Missing Work Recovery\n• Message drafts — Message Drafts > export buttons\n\nAll exports are HTML files you can print from your browser.");
       return;
     }
-    if (lc.match(/upload|csv|import|file/)) {
-      addMsg("bot", "To upload a gradebook: go to the Overview page and click 'Upload CSV' or drag a file into the upload area. The app accepts Canvas-style CSV exports.\n\nYou can upload multiple gradebooks using the section tabs at the top (one per period or subject).");
+    if (lc.match(/upload|csv|import|file format|gradebook file/)) {
+      addMsg("bot", "To upload a gradebook: go to the Overview page and click 'Upload CSV' or drag a file into the upload area. The app accepts Canvas-style CSV exports with student names, scores, and assignment columns.\n\nYou can upload multiple gradebooks using the section tabs at the top (one per period or subject).");
       return;
     }
     if (lc.match(/shortcut|keyboard/)) {
@@ -15658,6 +15658,10 @@ function HelpBot({
     }
     if (lc.match(/action group|intervention/)) {
       addMsg("bot", "Action Groups automatically categorize students: failing, at-risk, missing work, high-performing, etc.\n\nGo to Students > Action Groups. Click any student name to open their detail drawer with links to Grade Planner, Conference Prep, and message drafts.");
+      return;
+    }
+    if (lc.match(/what can|what does|what is this|how.*use|get started|this tool/)) {
+      addMsg("bot", "Optima Academy Online is a gradebook analytics dashboard. Upload a Canvas CSV and it gives you:\n\n• Overview — class stats, action items, charts\n• Students — roster, missing work, action groups\n• Grade Planner — retake simulations, recovery paths\n• Conference Prep — talking points, summaries, message drafts\n• Message Drafts — customizable templates for family communication\n\nAll message features are copy-only — the tool does not send anything.");
       return;
     }
     // Fallback
