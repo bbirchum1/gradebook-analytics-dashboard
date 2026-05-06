@@ -15482,6 +15482,404 @@ var defaultSections = [{
   cohort: ""
 }];
 var sectionColors = ["#2b6cb0", "#0d7c5f", "#9b5de5", "#d97035", "#c4314b", "#e8a838", "#2d8659", "#6366f1", "#be185d", "#0891b2", "#a16207", "#4f46e5"];
+
+/* ─── HELP BOT ────────────────────────────────── */
+function HelpBot({
+  data,
+  tab
+}) {
+  var [open, setOpen] = useState(false);
+  var [messages, setMessages] = useState([]);
+  var chatEnd = useRef(null);
+  useEffect(function () {
+    if (chatEnd.current) chatEnd.current.scrollIntoView({
+      behavior: "smooth"
+    });
+  }, [messages]);
+  var students = data ? data.students : [];
+  var assignments = data ? data.assignments : [];
+  var hasData = students.length > 0;
+  function addMsg(from, text) {
+    setMessages(function (p) {
+      return p.concat([{
+        from: from,
+        text: text
+      }]);
+    });
+  }
+  function respond(q) {
+    addMsg("user", q);
+    var lc = q.toLowerCase().trim();
+
+    // ── Data lookups ──
+    if (!hasData && lc.match(/average|failing|missing|student|grade|who|class|roster|top|lowest/)) {
+      addMsg("bot", "No gradebook data is loaded yet. Upload a CSV on the Overview page to get started.");
+      return;
+    }
+    // Class average
+    if (lc.match(/class average|class avg|overall average|what.*average/)) {
+      var avg = (students.reduce(function (s, st) {
+        return s + st.average;
+      }, 0) / students.length).toFixed(1);
+      var passing = students.filter(function (s) {
+        return s.average >= 60;
+      }).length;
+      addMsg("bot", "The class average is " + avg + "% across " + students.length + " students. " + passing + " are passing (60%+), " + (students.length - passing) + " are below passing.");
+      return;
+    }
+    // Failing
+    if (lc.match(/fail|below 60|f grade/)) {
+      var failing = students.filter(function (s) {
+        return s.average < 60;
+      });
+      if (!failing.length) {
+        addMsg("bot", "Great news — no students are currently below 60%.");
+        return;
+      }
+      addMsg("bot", failing.length + " student" + (failing.length > 1 ? "s" : "") + ": " + failing.map(function (s) {
+        return s.name + " (" + s.average + "%)";
+      }).join(", ") + "\n\nTip: Go to Students > Action Groups to see intervention suggestions, or use the Grade Planner to simulate recovery scenarios.");
+      return;
+    }
+    // Missing work
+    if (lc.match(/missing/)) {
+      var wm = students.filter(function (s) {
+        return assignments.some(function (a) {
+          return s.scores[a] === 0;
+        });
+      });
+      if (!wm.length) {
+        addMsg("bot", "No students have missing work right now.");
+        return;
+      }
+      var total = wm.reduce(function (sum, s) {
+        return sum + assignments.filter(function (a) {
+          return s.scores[a] === 0;
+        }).length;
+      }, 0);
+      var top3 = wm.sort(function (a, b) {
+        return assignments.filter(function (x) {
+          return b.scores[x] === 0;
+        }).length - assignments.filter(function (x) {
+          return a.scores[x] === 0;
+        }).length;
+      }).slice(0, 5);
+      addMsg("bot", wm.length + " student" + (wm.length > 1 ? "s" : "") + " with " + total + " total missing assignments.\n\nMost missing:\n" + top3.map(function (s) {
+        var c = assignments.filter(function (a) {
+          return s.scores[a] === 0;
+        }).length;
+        return "• " + s.name + " — " + c + " missing (" + s.average + "%)";
+      }).join("\n") + "\n\nTip: Go to Students > Missing Work Recovery to download checklists or create family message drafts.");
+      return;
+    }
+    // Top students
+    if (lc.match(/top|highest|honor|celebrate/)) {
+      var top = students.filter(function (s) {
+        return s.average >= 90;
+      }).sort(function (a, b) {
+        return b.average - a.average;
+      });
+      if (!top.length) {
+        addMsg("bot", "No students are currently at 90% or above.");
+        return;
+      }
+      addMsg("bot", top.length + " student" + (top.length > 1 ? "s" : "") + " at 90%+:\n" + top.slice(0, 8).map(function (s) {
+        return "• " + s.name + " — " + s.average + "%";
+      }).join("\n") + (top.length > 8 ? "\n...and " + (top.length - 8) + " more." : "") + "\n\nTip: The Overview page has a 'Celebrate Successes' action to recognize these students.");
+      return;
+    }
+    // Lowest
+    if (lc.match(/lowest|struggling|at risk|need.*help|bottom/)) {
+      var low = students.slice().sort(function (a, b) {
+        return a.average - b.average;
+      }).slice(0, 5);
+      addMsg("bot", "5 lowest-performing students:\n" + low.map(function (s) {
+        return "• " + s.name + " — " + s.average + "% (" + s.grade + ")";
+      }).join("\n") + "\n\nTip: Use the Grade Planner to simulate recovery paths, or go to Conference Prep for talking points.");
+      return;
+    }
+    // Grade distribution
+    if (lc.match(/distribution|breakdown|grade.*count|how many.*each/)) {
+      var dist = {
+        A: 0,
+        B: 0,
+        C: 0,
+        D: 0,
+        F: 0
+      };
+      students.forEach(function (s) {
+        dist[s.grade] = (dist[s.grade] || 0) + 1;
+      });
+      addMsg("bot", "Grade breakdown:\n• A (90%+): " + dist.A + " students\n• B (80–89%): " + dist.B + " students\n• C (70–79%): " + dist.C + " students\n• D (60–69%): " + dist.D + " students\n• F (<60%): " + dist.F + " students\n\nSee the Overview page for visual charts including a box & whisker plot.");
+      return;
+    }
+    // Student count
+    if (lc.match(/how many student|student count|class size/)) {
+      addMsg("bot", "There are " + students.length + " students in the current gradebook.");
+      return;
+    }
+
+    // ── Navigation help ──
+    if (lc.match(/copy|clipboard|draft/)) {
+      addMsg("bot", "To copy a draft: find any message card with a 'Copy Draft' button, click it, and the text goes to your clipboard. The button changes to '✓ Copied to clipboard'.\n\nThen paste into your approved messaging platform. This tool creates text only — it does not send messages.");
+      return;
+    }
+    if (lc.match(/weight/)) {
+      addMsg("bot", "To set up grade weights: go to the Overview page, find the gradebook bar with your CSV filename, and click 'Weights'. Add categories like Tests 40%, Homework 30%, etc., then map assignments to each category.\n\nWeighted grades will be used across all calculations and projections.");
+      return;
+    }
+    if (lc.match(/conference|talking point|prep.*meeting/)) {
+      addMsg("bot", "Conference Prep gives you a per-student view with: auto-generated summary, strengths & focus areas, talking points, grade recovery projections, a notes area, and family message drafts.\n\nUse the section nav at the top to jump between areas. The 'Copy Talking Points' and 'Copy Conference Notes' buttons are the fastest way to prep.\n\nKeyboard shortcuts: ← → or J/K to navigate between students.");
+      return;
+    }
+    if (lc.match(/planner|simulate|retake|recovery|what.*if/)) {
+      addMsg("bot", "The Grade Planner has 4 tools:\n• Missing Work Impact — what happens if assignments are submitted\n• Retake / Redo — simulate new scores on any assignment\n• Target Grade Planner — what's needed to reach a specific grade\n• Recovery Path — fewest assignments to the next grade level\n\nAll results include a standardized summary card you can copy.");
+      return;
+    }
+    if (lc.match(/template|customize|edit.*message/)) {
+      addMsg("bot", "To customize message templates: go to Message Drafts, pick a template tile (like 'Missing Work Reminder'), edit the subject and body with smart fields like {STUDENT_FIRST}, then click Save.\n\nYour edits are used everywhere that template appears, including Overview action items.");
+      return;
+    }
+    if (lc.match(/contained|departmentalized|cohort|mode/)) {
+      addMsg("bot", "Classroom modes:\n• Departmentalized — one subject, multiple periods\n• Contained — one teacher, multiple subjects (elementary style)\n\nToggle with the button in the top-right corner. Contained mode lets you link students across subjects and assign cohort labels like '3rd Grade' or '4th Grade'.");
+      return;
+    }
+    if (lc.match(/export|download|print/)) {
+      addMsg("bot", "You can download:\n• Conference reports — Conference Prep > Download button\n• Missing work checklists — Students > Missing Work Recovery\n• Message drafts — Message Drafts > export buttons\n\nAll exports are HTML files you can print from your browser.");
+      return;
+    }
+    if (lc.match(/upload|csv|import|file/)) {
+      addMsg("bot", "To upload a gradebook: go to the Overview page and click 'Upload CSV' or drag a file into the upload area. The app accepts Canvas-style CSV exports.\n\nYou can upload multiple gradebooks using the section tabs at the top (one per period or subject).");
+      return;
+    }
+    if (lc.match(/shortcut|keyboard/)) {
+      addMsg("bot", "Keyboard shortcuts:\n• 1–5 switch tabs (Overview, Students, Grade Planner, Conference, Message Drafts)\n• ← → or J/K navigate students in Conference Prep\n• Esc closes panels\n• Ctrl/⌘+C copies focused message cards");
+      return;
+    }
+    if (lc.match(/action group|intervention/)) {
+      addMsg("bot", "Action Groups automatically categorize students: failing, at-risk, missing work, high-performing, etc.\n\nGo to Students > Action Groups. Click any student name to open their detail drawer with links to Grade Planner, Conference Prep, and message drafts.");
+      return;
+    }
+    // Fallback
+    addMsg("bot", "I didn't find a match for that. Try one of the suggested questions below, or ask about: student grades, class data, navigation, or feature help.");
+  }
+
+  // Contextual questions per page
+  var pageQuestions = {
+    overview: hasData ? ["What's the class average?", "Who is failing?", "How many students have missing work?", "What's the grade distribution breakdown?", "How do I set up grade weights?"] : ["How do I upload a gradebook?", "What file format do I need?", "What's the difference between contained and departmentalized?", "How do I set up grade weights?", "What can this tool do?"],
+    students: hasData ? ["Who is failing?", "Which students have the most missing work?", "Who are the top students?", "Which students are at risk or struggling?", "How do I use Action Groups?"] : ["How do I upload a gradebook?", "How do I navigate the student roster?", "What are Action Groups?", "How do I set up grade weights?", "What can this tool do?"],
+    calc: hasData ? ["How does the Grade Planner work?", "Which students are struggling the most?", "What's the class average?", "How do I simulate a retake?", "How do I find a recovery path?"] : ["How does the Grade Planner work?", "How do I upload a gradebook?", "What tools does the planner have?", "How do I simulate retakes?", "What is a recovery path?"],
+    conference: hasData ? ["How do I prepare for a conference?", "How do I copy talking points?", "Which students are failing?", "How do I download a conference report?", "What keyboard shortcuts are available?"] : ["How do I prepare for a conference?", "How do I upload a gradebook?", "What does Conference Prep include?", "How do I copy talking points?", "What keyboard shortcuts are available?"],
+    email: hasData ? ["How do I customize a message template?", "How do I copy a draft?", "Who has missing work?", "Who is failing?", "How do I create drafts for all students?"] : ["How do I customize a message template?", "How do I upload a gradebook?", "How do I copy a draft?", "What templates are available?", "How do I create personalized drafts?"]
+  };
+  var questions = pageQuestions[tab] || pageQuestions.overview;
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed",
+      bottom: 24,
+      right: 24,
+      zIndex: 9999
+    }
+  }, open ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 380,
+      maxHeight: 520,
+      background: cl.card,
+      border: "1px solid " + cl.bdr,
+      borderRadius: 16,
+      boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      marginBottom: 12
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: "linear-gradient(135deg,#1a365d,#2b4c7e)",
+      padding: "14px 18px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      flexShrink: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 10
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      width: 32,
+      height: 32,
+      borderRadius: "50%",
+      background: "rgba(255,255,255,0.15)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+  }, /*#__PURE__*/React.createElement(MessageSquare, {
+    size: 16,
+    color: "#fff"
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 700,
+      color: "#fff"
+    }
+  }, "Help Assistant"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      color: "rgba(255,255,255,0.6)"
+    }
+  }, "Select a question below"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex",
+      alignItems: "center",
+      gap: 6
+    }
+  }, messages.length > 0 ? /*#__PURE__*/React.createElement("button", {
+    onClick: function () {
+      setMessages([]);
+    },
+    title: "Clear conversation",
+    style: {
+      background: "rgba(255,255,255,0.1)",
+      border: "none",
+      cursor: "pointer",
+      color: "rgba(255,255,255,0.6)",
+      fontSize: 11,
+      padding: "3px 8px",
+      borderRadius: 4
+    }
+  }, "Clear") : null, /*#__PURE__*/React.createElement("button", {
+    onClick: function () {
+      setOpen(false);
+    },
+    style: {
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      color: "rgba(255,255,255,0.7)",
+      fontSize: 18,
+      padding: 4
+    }
+  }, "\xD7"))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      overflowY: "auto",
+      padding: "14px 16px",
+      display: "flex",
+      flexDirection: "column",
+      gap: 10,
+      minHeight: 120,
+      maxHeight: 280
+    }
+  }, messages.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      padding: "16px 10px",
+      color: cl.muted
+    }
+  }, /*#__PURE__*/React.createElement(MessageSquare, {
+    size: 24,
+    color: cl.bdr,
+    style: {
+      marginBottom: 6
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 13,
+      fontWeight: 600,
+      marginBottom: 4
+    }
+  }, "How can I help?"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12
+    }
+  }, "Pick a question below to get started.")) : null, messages.map(function (m, i) {
+    var isBot = m.from === "bot";
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: {
+        display: "flex",
+        justifyContent: isBot ? "flex-start" : "flex-end"
+      }
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        maxWidth: "85%",
+        padding: "10px 14px",
+        borderRadius: isBot ? "4px 14px 14px 14px" : "14px 4px 14px 14px",
+        background: isBot ? cl.warm : cl.accent,
+        color: isBot ? cl.txt : "#fff",
+        fontSize: 12,
+        lineHeight: 1.6,
+        whiteSpace: "pre-line"
+      }
+    }, m.text));
+  }), /*#__PURE__*/React.createElement("div", {
+    ref: chatEnd
+  })), /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: "10px 14px",
+      borderTop: "1px solid " + cl.bdr,
+      flexShrink: 0,
+      display: "flex",
+      flexDirection: "column",
+      gap: 5
+    }
+  }, questions.map(function (q) {
+    return /*#__PURE__*/React.createElement("button", {
+      key: q,
+      onClick: function () {
+        respond(q);
+      },
+      style: {
+        textAlign: "left",
+        background: cl.bg,
+        border: "1px solid " + cl.bdr,
+        borderRadius: 8,
+        padding: "8px 12px",
+        cursor: "pointer",
+        fontSize: 12,
+        color: cl.accent,
+        fontWeight: 500,
+        lineHeight: 1.3,
+        transition: "all 0.1s"
+      },
+      onMouseEnter: function (e) {
+        e.currentTarget.style.background = cl.accent + "08";
+        e.currentTarget.style.borderColor = cl.accent + "40";
+      },
+      onMouseLeave: function (e) {
+        e.currentTarget.style.background = cl.bg;
+        e.currentTarget.style.borderColor = cl.bdr;
+      }
+    }, q);
+  }))) : null, /*#__PURE__*/React.createElement("button", {
+    onClick: function () {
+      setOpen(!open);
+    },
+    style: {
+      width: 56,
+      height: 56,
+      borderRadius: "50%",
+      background: "linear-gradient(135deg,#1a365d,#2b4c7e)",
+      color: "#fff",
+      border: "none",
+      cursor: "pointer",
+      boxShadow: "0 4px 16px rgba(26,54,93,0.35)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      transition: "transform 0.15s"
+    }
+  }, open ? /*#__PURE__*/React.createElement(X, {
+    size: 22
+  }) : /*#__PURE__*/React.createElement(MessageSquare, {
+    size: 22
+  })));
+}
 function GradebookAnalyzer() {
   var [classroomMode, setClassroomMode] = useState("departmentalized"); // "departmentalized" | "contained"
   var [containedSetupNeeded, setContainedSetupNeeded] = useState(false); // shows the subject wizard when true
@@ -17069,7 +17467,10 @@ function GradebookAnalyzer() {
     weights: activeWeights,
     onGoToConference: goToConference,
     sectionName: active.name
-  }) : null)));
+  }) : null)), /*#__PURE__*/React.createElement(HelpBot, {
+    data: data,
+    tab: tab
+  }));
 }
 
 /* ─── CONTAINED SETUP WIZARD ──────────────────── */
