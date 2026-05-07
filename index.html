@@ -2651,15 +2651,12 @@ function StudentTab({
   // Close drawer on Escape
   useEffect(function () {
     if (!drawerStudent) return;
-    function onKey(e) {
-      if (e.key === "Escape") {
-        setDrawerStudent(null);
-        e.preventDefault();
-      }
+    function onEsc() {
+      setDrawerStudent(null);
     }
-    document.addEventListener("keydown", onKey);
+    window.addEventListener("app-escape", onEsc);
     return function () {
-      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("app-escape", onEsc);
     };
   }, [drawerStudent]); // "comfortable" or "compact"
 
@@ -12283,6 +12280,19 @@ function CalculatorTab({
   var [calcSearch, setCalcSearch] = useState("");
   var [calcSearchOpen, setCalcSearchOpen] = useState(false);
   var [copiedQA, setCopiedQA] = useState(null);
+
+  // Close calculator search on Escape
+  useEffect(function () {
+    if (!calcSearchOpen) return;
+    function onEsc() {
+      setCalcSearchOpen(false);
+      setCalcSearch("");
+    }
+    window.addEventListener("app-escape", onEsc);
+    return function () {
+      window.removeEventListener("app-escape", onEsc);
+    };
+  }, [calcSearchOpen]);
   function resetSim() {
     setSimAssignment("");
     setSimScore(80);
@@ -15486,11 +15496,27 @@ var sectionColors = ["#2b6cb0", "#0d7c5f", "#9b5de5", "#d97035", "#c4314b", "#e8
 /* ─── HELP BOT ────────────────────────────────── */
 function HelpBot({
   data,
-  tab
+  tab,
+  selectedStudentId,
+  sectionName
 }) {
   var [open, setOpen] = useState(false);
   var [messages, setMessages] = useState([]);
+  var [lastTopic, setLastTopic] = useState(null);
   var chatEnd = useRef(null);
+  var [welcomed, setWelcomed] = useState({});
+
+  // Close on Escape
+  useEffect(function () {
+    if (!open) return;
+    function onEsc() {
+      setOpen(false);
+    }
+    window.addEventListener("app-escape", onEsc);
+    return function () {
+      window.removeEventListener("app-escape", onEsc);
+    };
+  }, [open]);
   useEffect(function () {
     if (chatEnd.current) chatEnd.current.scrollIntoView({
       behavior: "smooth"
@@ -15499,24 +15525,67 @@ function HelpBot({
   var students = data ? data.students : [];
   var assignments = data ? data.assignments : [];
   var hasData = students.length > 0;
-  function addMsg(from, text) {
+  var selectedStudent = selectedStudentId ? students.find(function (s) {
+    return s.id === selectedStudentId;
+  }) : null;
+  function addBot(text, topic, followUps) {
     setMessages(function (p) {
       return p.concat([{
-        from: from,
+        from: "bot",
+        text: text,
+        followUps: followUps || []
+      }]);
+    });
+    if (topic) setLastTopic(topic);
+  }
+  function addUser(text) {
+    setMessages(function (p) {
+      return p.concat([{
+        from: "user",
         text: text
       }]);
     });
   }
-  function respond(q) {
-    addMsg("user", q);
-    var lc = q.toLowerCase().trim();
 
-    // ── Data lookups ──
-    if (!hasData && lc.match(/average|failing|missing|student|grade|who|class|roster|top|lowest/)) {
-      addMsg("bot", "No gradebook data is loaded yet. Upload a CSV on the Overview page to get started.");
+  // Page-aware welcome on open
+  useEffect(function () {
+    if (!open || welcomed[tab]) return;
+    var w = null;
+    if (tab === "overview") w = {
+      text: hasData ? "Welcome! You're viewing the Overview for " + (sectionName || "your class") + ". Here's a snapshot: " + students.length + " students, class average " + (students.reduce(function (s, st) {
+        return s + st.average;
+      }, 0) / Math.max(students.length, 1)).toFixed(1) + "%." : "Welcome! Upload a gradebook CSV to get started. Drag a file onto the upload area or click to browse.",
+      followUps: hasData ? ["Who is failing?", "What's the grade distribution?", "How do I set up weights?"] : ["How do I upload a gradebook?", "What file format do I need?", "What can this tool do?"]
+    };else if (tab === "students") w = {
+      text: "You're on the Students page" + (sectionName ? " for " + sectionName : "") + ". Browse the roster, check missing work, or view action groups.",
+      followUps: hasData ? ["Who has the most missing work?", "Which students are at risk?", "How do Action Groups work?"] : ["How do I upload a gradebook?"]
+    };else if (tab === "calc") w = {
+      text: "You're in the Grade Planner" + (selectedStudent ? " for " + selectedStudent.name + " (" + selectedStudent.average + "% " + selectedStudent.grade + ")" : "") + "." + (selectedStudent ? " Select a tool tab to start simulating." : "  Select a student to begin."),
+      followUps: selectedStudent ? ["How does Retake / Redo work?", "What is a Recovery Path?", "How do I copy the result?"] : ["How does the Grade Planner work?", "How do I simulate a retake?"]
+    };else if (tab === "conference") w = {
+      text: "You're in Conference Prep" + (selectedStudent ? " for " + selectedStudent.name + " (" + selectedStudent.average + "% " + selectedStudent.grade + ")." : "") + "\n\nUse the section nav to jump between Summary, Strengths, Recovery, Message Drafts, and more.",
+      followUps: ["How do I copy talking points?", "How do I download a report?", "What keyboard shortcuts work here?"]
+    };else if (tab === "email") w = {
+      text: "You're on Message Drafts. Choose a template to customize, or switch to Personalized Drafts to create batch messages for your whole class.",
+      followUps: ["How do I customize a template?", "How do I copy a draft?", "How do I create drafts for all students?"]
+    };
+    if (w) {
+      addBot(w.text, null, w.followUps);
+      setWelcomed(function (p) {
+        var n = {};
+        for (var k in p) n[k] = p[k];
+        n[tab] = true;
+        return n;
+      });
+    }
+  }, [open, tab]);
+  function respond(q) {
+    addUser(q);
+    var lc = q.toLowerCase().trim();
+    if (!hasData && lc.match(/average|failing|missing|student|grade|who|class|roster|top|lowest|distribution/)) {
+      addBot("No gradebook data is loaded yet. Upload a CSV on the Overview page to get started.", "nodata", ["How do I upload a gradebook?", "What file format do I need?"]);
       return;
     }
-    // Class average
     if (lc.match(/class average|class avg|overall average|what.*average/)) {
       var avg = (students.reduce(function (s, st) {
         return s + st.average;
@@ -15524,24 +15593,22 @@ function HelpBot({
       var passing = students.filter(function (s) {
         return s.average >= 60;
       }).length;
-      addMsg("bot", "The class average is " + avg + "% across " + students.length + " students. " + passing + " are passing (60%+), " + (students.length - passing) + " are below passing.");
+      addBot("The class average is " + avg + "% across " + students.length + " students. " + passing + " are passing (60%+), " + (students.length - passing) + " are below passing.", "average", ["Who is failing?", "Who are the top students?", "What's the grade distribution?"]);
       return;
     }
-    // Failing
     if (lc.match(/fail|below 60|f grade/)) {
       var failing = students.filter(function (s) {
         return s.average < 60;
       });
       if (!failing.length) {
-        addMsg("bot", "Great news — no students are currently below 60%.");
+        addBot("Great news — no students are currently below 60%.", "failing", ["Who has missing work?", "Who are the top students?"]);
         return;
       }
-      addMsg("bot", failing.length + " student" + (failing.length > 1 ? "s" : "") + ": " + failing.map(function (s) {
+      addBot(failing.length + " student" + (failing.length > 1 ? "s" : "") + ": " + failing.map(function (s) {
         return s.name + " (" + s.average + "%)";
-      }).join(", ") + "\n\nTip: Go to Students > Action Groups to see intervention suggestions, or use the Grade Planner to simulate recovery scenarios.");
+      }).join(", "), "failing", ["How do I create message drafts for these students?", "How do I use the Grade Planner for recovery?", "How do I view Action Groups?"]);
       return;
     }
-    // Missing work
     if (lc.match(/missing/)) {
       var wm = students.filter(function (s) {
         return assignments.some(function (a) {
@@ -15549,7 +15616,7 @@ function HelpBot({
         });
       });
       if (!wm.length) {
-        addMsg("bot", "No students have missing work right now.");
+        addBot("No students have missing work right now.", "missing", ["What's the class average?", "Who are the top students?"]);
         return;
       }
       var total = wm.reduce(function (sum, s) {
@@ -15564,15 +15631,14 @@ function HelpBot({
           return a.scores[x] === 0;
         }).length;
       }).slice(0, 5);
-      addMsg("bot", wm.length + " student" + (wm.length > 1 ? "s" : "") + " with " + total + " total missing assignments.\n\nMost missing:\n" + top3.map(function (s) {
+      addBot(wm.length + " student" + (wm.length > 1 ? "s" : "") + " with " + total + " total missing assignments.\n\nMost missing:\n" + top3.map(function (s) {
         var c = assignments.filter(function (a) {
           return s.scores[a] === 0;
         }).length;
         return "• " + s.name + " — " + c + " missing (" + s.average + "%)";
-      }).join("\n") + "\n\nTip: Go to Students > Missing Work Recovery to download checklists or create family message drafts.");
+      }).join("\n"), "missing", ["How do I create missing work checklists?", "How do I create message drafts for these students?", "How do I use the Grade Planner?"]);
       return;
     }
-    // Top students
     if (lc.match(/top|highest|honor|celebrate/)) {
       var top = students.filter(function (s) {
         return s.average >= 90;
@@ -15580,25 +15646,23 @@ function HelpBot({
         return b.average - a.average;
       });
       if (!top.length) {
-        addMsg("bot", "No students are currently at 90% or above.");
+        addBot("No students are currently at 90% or above.", "top", []);
         return;
       }
-      addMsg("bot", top.length + " student" + (top.length > 1 ? "s" : "") + " at 90%+:\n" + top.slice(0, 8).map(function (s) {
+      addBot(top.length + " student" + (top.length > 1 ? "s" : "") + " at 90%+:\n" + top.slice(0, 8).map(function (s) {
         return "• " + s.name + " — " + s.average + "%";
-      }).join("\n") + (top.length > 8 ? "\n...and " + (top.length - 8) + " more." : "") + "\n\nTip: The Overview page has a 'Celebrate Successes' action to recognize these students.");
+      }).join("\n") + (top.length > 8 ? "\n...and " + (top.length - 8) + " more." : ""), "top", ["How do I celebrate these students?", "What's the class average?", "Who is failing?"]);
       return;
     }
-    // Lowest
     if (lc.match(/lowest|struggling|at risk|need.*help|bottom/)) {
       var low = students.slice().sort(function (a, b) {
         return a.average - b.average;
       }).slice(0, 5);
-      addMsg("bot", "5 lowest-performing students:\n" + low.map(function (s) {
+      addBot("5 lowest-performing students:\n" + low.map(function (s) {
         return "• " + s.name + " — " + s.average + "% (" + s.grade + ")";
-      }).join("\n") + "\n\nTip: Use the Grade Planner to simulate recovery paths, or go to Conference Prep for talking points.");
+      }).join("\n"), "lowest", ["How do I use the Grade Planner for recovery?", "How do I prepare for a conference?", "How do I create message drafts?"]);
       return;
     }
-    // Grade distribution
     if (lc.match(/distribution|breakdown|grade.*count|how many.*each/)) {
       var dist = {
         A: 0,
@@ -15610,73 +15674,93 @@ function HelpBot({
       students.forEach(function (s) {
         dist[s.grade] = (dist[s.grade] || 0) + 1;
       });
-      addMsg("bot", "Grade breakdown:\n• A (90%+): " + dist.A + " students\n• B (80–89%): " + dist.B + " students\n• C (70–79%): " + dist.C + " students\n• D (60–69%): " + dist.D + " students\n• F (<60%): " + dist.F + " students\n\nSee the Overview page for visual charts including a box & whisker plot.");
+      addBot("Grade breakdown:\n• A (90%+): " + dist.A + " students\n• B (80–89%): " + dist.B + " students\n• C (70–79%): " + dist.C + " students\n• D (60–69%): " + dist.D + " students\n• F (<60%): " + dist.F + " students", "distribution", ["Who is failing?", "Who are the top students?", "What's the class average?"]);
       return;
     }
-    // Student count
     if (lc.match(/how many student|student count|class size/)) {
-      addMsg("bot", "There are " + students.length + " students in the current gradebook.");
+      addBot("There are " + students.length + " students in the current gradebook.", "count", ["What's the class average?", "Who is failing?"]);
       return;
     }
 
-    // ── Navigation help ──
+    // Navigation
     if (lc.match(/contained|departmentalized|cohort|classroom.*mode/)) {
-      addMsg("bot", "Classroom modes:\n• Departmentalized — one subject, multiple periods\n• Contained — one teacher, multiple subjects (elementary style)\n\nToggle with the button in the top-right corner. Contained mode lets you link students across subjects and assign cohort labels like '3rd Grade' or '4th Grade'.");
+      addBot("Classroom modes:\n• Departmentalized — one subject, multiple periods\n• Contained — one teacher, multiple subjects (elementary style)\n\nToggle with the button in the top-right corner. Contained mode lets you link students across subjects and assign cohort labels.", "mode", ["How do I upload a gradebook?", "How do I set up grade weights?"]);
       return;
     }
     if (lc.match(/copy|clipboard|draft/)) {
-      addMsg("bot", "To copy a draft: find any message card with a 'Copy Draft' button, click it, and the text goes to your clipboard. The button changes to '✓ Copied to clipboard'.\n\nThen paste into your approved messaging platform. This tool creates text only — it does not send messages.");
+      addBot("To copy a draft: find any message card with a 'Copy Draft' button, click it, and the text goes to your clipboard.\n\nThe button changes to '✓ Copied to clipboard'. Then paste into your approved messaging platform. This tool creates text only — it does not send messages.", "copy", ["How do I customize a template?", "How do I create drafts for all students?"]);
       return;
     }
     if (lc.match(/weight/)) {
-      addMsg("bot", "To set up grade weights: go to the Overview page, find the gradebook bar with your CSV filename, and click 'Weights'. Add categories like Tests 40%, Homework 30%, etc., then map assignments to each category.\n\nWeighted grades will be used across all calculations and projections.");
+      addBot("To set up grade weights: go to the Overview page, find the gradebook bar, and click 'Weights'. Add categories like Tests 40%, Homework 30%, then map assignments to each category.\n\nWeighted grades are used across all calculations and projections.", "weights", ["What's the class average?", "How does the Grade Planner work?"]);
       return;
     }
     if (lc.match(/conference|talking point|prep.*meeting/)) {
-      addMsg("bot", "Conference Prep gives you a per-student view with: auto-generated summary, strengths & focus areas, talking points, grade recovery projections, a notes area, and family message drafts.\n\nUse the section nav at the top to jump between areas. The 'Copy Talking Points' and 'Copy Conference Notes' buttons are the fastest way to prep.\n\nKeyboard shortcuts: ← → or J/K to navigate between students.");
+      addBot("Conference Prep gives you a per-student view with: summary, strengths & focus areas, talking points, grade recovery projections, notes area, and family message drafts.\n\nUse the section nav to jump between areas. 'Copy Talking Points' and 'Copy Conference Notes' are the fastest prep tools.\n\nKeyboard shortcuts: ← → or J/K to navigate students.", "conference", ["How do I download a conference report?", "How do I copy talking points?", "What keyboard shortcuts are available?"]);
       return;
     }
     if (lc.match(/planner|simulate|retake|recovery|what if /)) {
-      addMsg("bot", "The Grade Planner has 4 tools:\n• Missing Work Impact — what happens if assignments are submitted\n• Retake / Redo — simulate new scores on any assignment\n• Target Grade Planner — what's needed to reach a specific grade\n• Recovery Path — fewest assignments to the next grade level\n\nAll results include a standardized summary card you can copy.");
+      addBot("The Grade Planner has 4 tools:\n• Missing Work Impact — what happens if assignments are submitted\n• Retake / Redo — simulate new scores on any assignment\n• Target Grade Planner — what's needed to reach a specific grade\n• Recovery Path — fewest assignments to the next grade level\n\nAll results include a summary card you can copy or add to conference notes.", "planner", ["How do I copy the result summary?", "How do I find a recovery path?", "What is Missing Work Impact?"]);
       return;
     }
     if (lc.match(/template|customize|edit.*message/)) {
-      addMsg("bot", "To customize message templates: go to Message Drafts, pick a template tile (like 'Missing Work Reminder'), edit the subject and body with smart fields like {STUDENT_FIRST}, then click Save.\n\nYour edits are used everywhere that template appears, including Overview action items.");
+      addBot("To customize message templates: go to Message Drafts, pick a template tile, edit the subject and body with smart fields like {STUDENT_FIRST}, then click Save.\n\nYour edits are used everywhere that template appears, including Overview action items.", "template", ["How do I copy a draft?", "How do I create drafts for all students?"]);
       return;
     }
-    if (lc.match(/export|download|print/)) {
-      addMsg("bot", "You can download:\n• Conference reports — Conference Prep > Download button\n• Missing work checklists — Students > Missing Work Recovery\n• Message drafts — Message Drafts > export buttons\n\nAll exports are HTML files you can print from your browser.");
+    if (lc.match(/checklist|missing work checklist|download checklist/)) {
+      addBot("Missing work checklists are available on the Students page > Missing Work Recovery view. Each student card has a 'Missing Work Checklist' download button and a 'Grade Planner' button.\n\nYou can also create checklists from the Grade Planner's quick actions.", "checklist", ["How do I create message drafts?", "How does the Grade Planner work?"]);
       return;
     }
-    if (lc.match(/upload|csv|import|file format|gradebook file/)) {
-      addMsg("bot", "To upload a gradebook: go to the Overview page and click 'Upload CSV' or drag a file into the upload area. The app accepts Canvas-style CSV exports with student names, scores, and assignment columns.\n\nYou can upload multiple gradebooks using the section tabs at the top (one per period or subject).");
+    if (lc.match(/create.*draft.*all|batch|all student|personalized draft/)) {
+      addBot("To create drafts for all students: go to Message Drafts > Personalized Drafts. Use the filters at the top to select recipients by grade range, then customize content blocks.\n\nEach student gets a personalized message based on their actual gradebook data. Click 'Copy All Drafts' or copy individually.", "batchdraft", ["How do I customize a template?", "How do I copy a draft?"]);
       return;
     }
-    if (lc.match(/shortcut|keyboard/)) {
-      addMsg("bot", "Keyboard shortcuts:\n• 1–5 switch tabs (Overview, Students, Grade Planner, Conference, Message Drafts)\n• ← → or J/K navigate students in Conference Prep\n• Esc closes panels\n• Ctrl/⌘+C copies focused message cards");
+    if (lc.match(/celebrate|recognition|positive/)) {
+      addBot("To celebrate student success: the Overview page automatically creates a 'Celebrate Successes' action item for students at 90%+. Click it to expand personalized recognition messages you can copy.\n\nYou can also customize the celebration template in Message Drafts.", "celebrate", ["Who are the top students?", "How do I customize a template?"]);
       return;
     }
     if (lc.match(/action group|intervention/)) {
-      addMsg("bot", "Action Groups automatically categorize students: failing, at-risk, missing work, high-performing, etc.\n\nGo to Students > Action Groups. Click any student name to open their detail drawer with links to Grade Planner, Conference Prep, and message drafts.");
+      addBot("Action Groups automatically categorize students: failing, at-risk, missing work, high-performing, etc.\n\nGo to Students > Action Groups. Click any student name to open their detail drawer with links to Grade Planner, Conference Prep, and message drafts.", "groups", ["Who is failing?", "Who has missing work?", "How do I create message drafts?"]);
+      return;
+    }
+    if (lc.match(/export|download|print|report/)) {
+      addBot("You can download:\n• Conference reports — Conference Prep > Download button\n• Missing work checklists — Students > Missing Work Recovery\n• Message drafts — Message Drafts > export buttons\n\nAll exports are HTML files you can print from your browser.", "export", ["How do I prepare for a conference?", "How do I create missing work checklists?"]);
+      return;
+    }
+    if (lc.match(/upload|csv|import|file format|gradebook file/)) {
+      addBot("Upload a gradebook: go to the Overview page and click 'Upload CSV' or drag a file into the upload area. The app accepts Canvas-style CSV exports with student names, scores, and assignment columns.\n\nMultiple gradebooks can be uploaded using the section tabs at the top.", "upload", ["What's the difference between contained and departmentalized?", "How do I set up grade weights?"]);
+      return;
+    }
+    if (lc.match(/shortcut|keyboard/)) {
+      addBot("Keyboard shortcuts:\n• 1–5 switch tabs (Overview, Students, Grade Planner, Conference, Drafts)\n• ← → or J/K navigate students in Conference Prep\n• Esc closes panels\n• Ctrl/⌘+C copies focused message cards", "shortcuts", []);
       return;
     }
     if (lc.match(/what can|what does|what is this|how.*use|get started|this tool/)) {
-      addMsg("bot", "Optima Academy Online is a gradebook analytics dashboard. Upload a Canvas CSV and it gives you:\n\n• Overview — class stats, action items, charts\n• Students — roster, missing work, action groups\n• Grade Planner — retake simulations, recovery paths\n• Conference Prep — talking points, summaries, message drafts\n• Message Drafts — customizable templates for family communication\n\nAll message features are copy-only — the tool does not send anything.");
+      addBot("Optima Academy Online is a gradebook analytics dashboard. Upload a Canvas CSV and get:\n\n• Overview — class stats, action items, charts\n• Students — roster, missing work, action groups\n• Grade Planner — retake simulations, recovery paths\n• Conference Prep — talking points, summaries, notes\n• Message Drafts — customizable family communication\n\nAll messages are copy-only — the tool does not send anything.", "overview", ["How do I upload a gradebook?", "How do I set up grade weights?", "How does the Grade Planner work?"]);
       return;
     }
     // Fallback
-    addMsg("bot", "I didn't find a match for that. Try one of the suggested questions below, or ask about: student grades, class data, navigation, or feature help.");
+    addBot("I didn't find a match for that. Try one of the suggested questions below, or ask about student grades, class data, navigation, or features.", null, ["What can this tool do?", "What's the class average?", "How do I prepare for a conference?"]);
   }
 
-  // Contextual questions per page
+  // Bottom questions: use follow-ups from last bot message, or page defaults
+  var lastBotMsg = null;
+  for (var mi = messages.length - 1; mi >= 0; mi--) {
+    if (messages[mi].from === "bot") {
+      lastBotMsg = messages[mi];
+      break;
+    }
+  }
+  var bottomFollowUps = lastBotMsg && lastBotMsg.followUps && lastBotMsg.followUps.length > 0 ? lastBotMsg.followUps : null;
   var pageQuestions = {
-    overview: hasData ? ["What's the class average?", "Who is failing?", "How many students have missing work?", "What's the grade distribution breakdown?", "How do I set up grade weights?"] : ["How do I upload a gradebook?", "What file format do I need?", "What's the difference between contained and departmentalized?", "How do I set up grade weights?", "What can this tool do?"],
-    students: hasData ? ["Who is failing?", "Which students have the most missing work?", "Who are the top students?", "Which students are at risk or struggling?", "How do I use Action Groups?"] : ["How do I upload a gradebook?", "How do I navigate the student roster?", "What are Action Groups?", "How do I set up grade weights?", "What can this tool do?"],
-    calc: hasData ? ["How does the Grade Planner work?", "Which students are struggling the most?", "What's the class average?", "How do I simulate a retake?", "How do I find a recovery path?"] : ["How does the Grade Planner work?", "How do I upload a gradebook?", "What tools does the planner have?", "How do I simulate retakes?", "What is a recovery path?"],
-    conference: hasData ? ["How do I prepare for a conference?", "How do I copy talking points?", "Which students are failing?", "How do I download a conference report?", "What keyboard shortcuts are available?"] : ["How do I prepare for a conference?", "How do I upload a gradebook?", "What does Conference Prep include?", "How do I copy talking points?", "What keyboard shortcuts are available?"],
-    email: hasData ? ["How do I customize a message template?", "How do I copy a draft?", "Who has missing work?", "Who is failing?", "How do I create drafts for all students?"] : ["How do I customize a message template?", "How do I upload a gradebook?", "How do I copy a draft?", "What templates are available?", "How do I create personalized drafts?"]
+    overview: hasData ? ["What's the class average?", "Who is failing?", "Who has missing work?", "What's the grade distribution?", "How do I set up grade weights?"] : ["How do I upload a gradebook?", "What file format do I need?", "What's the difference between contained and departmentalized?", "How do I set up grade weights?", "What can this tool do?"],
+    students: hasData ? ["Who is failing?", "Who has the most missing work?", "Who are the top students?", "Which students are at risk?", "How do Action Groups work?"] : ["How do I upload a gradebook?", "How do Action Groups work?", "What can this tool do?"],
+    calc: hasData ? ["How does the Grade Planner work?", "Who is struggling the most?", "How do I simulate a retake?", "What is a Recovery Path?", "How do I copy the result?"] : ["How does the Grade Planner work?", "How do I simulate a retake?", "What is a Recovery Path?"],
+    conference: ["How do I copy talking points?", "How do I download a conference report?", "How do I prepare for a conference?", "What keyboard shortcuts work here?", "How do I create a family message draft?"],
+    email: ["How do I customize a template?", "How do I copy a draft?", "How do I create drafts for all students?", "How do I celebrate student success?", "What can this tool do?"]
   };
-  var questions = pageQuestions[tab] || pageQuestions.overview;
+  var defaultQuestions = pageQuestions[tab] || pageQuestions.overview;
+  var displayQuestions = bottomFollowUps || defaultQuestions;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed",
@@ -15687,7 +15771,7 @@ function HelpBot({
   }, open ? /*#__PURE__*/React.createElement("div", {
     style: {
       width: 380,
-      maxHeight: 520,
+      maxHeight: 560,
       background: cl.card,
       border: "1px solid " + cl.bdr,
       borderRadius: 16,
@@ -15745,8 +15829,10 @@ function HelpBot({
   }, messages.length > 0 ? /*#__PURE__*/React.createElement("button", {
     onClick: function () {
       setMessages([]);
+      setLastTopic(null);
+      setWelcomed({});
     },
-    title: "Clear conversation",
+    title: "Start over",
     style: {
       background: "rgba(255,255,255,0.1)",
       border: "none",
@@ -15756,7 +15842,7 @@ function HelpBot({
       padding: "3px 8px",
       borderRadius: 4
     }
-  }, "Clear") : null, /*#__PURE__*/React.createElement("button", {
+  }, "Start over") : null, /*#__PURE__*/React.createElement("button", {
     onClick: function () {
       setOpen(false);
     },
@@ -15776,13 +15862,13 @@ function HelpBot({
       display: "flex",
       flexDirection: "column",
       gap: 10,
-      minHeight: 120,
-      maxHeight: 280
+      minHeight: 100,
+      maxHeight: 300
     }
   }, messages.length === 0 ? /*#__PURE__*/React.createElement("div", {
     style: {
       textAlign: "center",
-      padding: "16px 10px",
+      padding: "20px 10px",
       color: cl.muted
     }
   }, /*#__PURE__*/React.createElement(MessageSquare, {
@@ -15794,12 +15880,12 @@ function HelpBot({
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 13,
-      fontWeight: 600,
-      marginBottom: 4
+      fontWeight: 600
     }
   }, "How can I help?"), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12
+      fontSize: 12,
+      marginTop: 4
     }
   }, "Pick a question below to get started.")) : null, messages.map(function (m, i) {
     var isBot = m.from === "bot";
@@ -15807,7 +15893,9 @@ function HelpBot({
       key: i,
       style: {
         display: "flex",
-        justifyContent: isBot ? "flex-start" : "flex-end"
+        flexDirection: "column",
+        gap: 4,
+        alignItems: isBot ? "flex-start" : "flex-end"
       }
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -15832,7 +15920,16 @@ function HelpBot({
       flexDirection: "column",
       gap: 5
     }
-  }, questions.map(function (q) {
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 10,
+      color: cl.muted,
+      fontWeight: 600,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 2
+    }
+  }, bottomFollowUps ? "Follow-up questions" : "Suggested questions"), displayQuestions.map(function (q) {
     return /*#__PURE__*/React.createElement("button", {
       key: q,
       onClick: function () {
@@ -15875,8 +15972,7 @@ function HelpBot({
       boxShadow: "0 4px 16px rgba(26,54,93,0.35)",
       display: "flex",
       alignItems: "center",
-      justifyContent: "center",
-      transition: "transform 0.15s"
+      justifyContent: "center"
     }
   }, open ? /*#__PURE__*/React.createElement(X, {
     size: 22
@@ -16497,13 +16593,17 @@ function GradebookAnalyzer() {
       var tag = document.activeElement ? document.activeElement.tagName : "";
       var isTyping = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || document.activeElement && document.activeElement.isContentEditable;
 
-      // Escape: close open panels
+      // Escape: close open panels (priority order - close topmost first)
       if (e.key === "Escape") {
+        // Dispatch custom event so child components can close their own panels
+        window.dispatchEvent(new CustomEvent("app-escape"));
         if (showWeights) {
           setShowWeights(false);
           e.preventDefault();
           return;
         }
+        e.preventDefault();
+        return;
       }
 
       // Number keys 1-5: switch tabs (only when data loaded and not typing)
@@ -17473,7 +17573,9 @@ function GradebookAnalyzer() {
     sectionName: active.name
   }) : null)), /*#__PURE__*/React.createElement(HelpBot, {
     data: data,
-    tab: tab
+    tab: tab,
+    selectedStudentId: selectedStudentId,
+    sectionName: active.name
   }));
 }
 
